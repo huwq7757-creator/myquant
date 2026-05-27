@@ -34,8 +34,19 @@
             <div class="relative w-full aspect-square bg-slate-950 rounded-xl p-px border border-slate-800 overflow-hidden">
                 <div id="matrix-container" class="absolute inset-0 grid grid-cols-7 grid-rows-7 gap-px bg-slate-800/80 z-10"></div>
                 
-                <div id="quantum-dot" class="hidden absolute w-4 h-4 bg-rose-500 rounded-full border-2 border-white shadow-[0_0_14px_rgba(244,63,94,1)] z-20 transform -translate-x-1/2 -translate-y-1/2 animate-ping matrix-dot"></div>
-                <div id="quantum-dot-solid" class="hidden absolute w-3 h-3 bg-rose-500 rounded-full border border-white shadow-[0_0_8px_rgba(244,63,94,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+                <div id="quantum-dot" class="hidden absolute w-4 h-4 bg-rose-500 rounded-full border-2 border-white shadow-[0_0_14px_rgba(244,63,94,1)] z-30 transform -translate-x-1/2 -translate-y-1/2 animate-ping matrix-dot"></div>
+                <div id="quantum-dot-solid" class="hidden absolute w-3 h-3 bg-rose-500 rounded-full border border-white shadow-[0_0_8px_rgba(244,63,94,0.8)] z-30 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+                
+                <div id="dot-week" class="hidden absolute w-2.5 h-2.5 bg-amber-500 rounded-full border border-white shadow-[0_0_6px_rgba(245,158,11,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+                <div id="dot-month" class="hidden absolute w-2.5 h-2.5 bg-sky-400 rounded-full border border-white shadow-[0_0_6px_rgba(56,189,248,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+                <div id="dot-quarter" class="hidden absolute w-2.5 h-2.5 bg-slate-300 rounded-full border border-slate-600 shadow-[0_0_5px_rgba(203,213,225,0.6)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+            </div>
+            
+            <div class="flex justify-center items-center gap-3 text-[10px] text-slate-400 mt-2.5 bg-slate-950/50 py-1.5 rounded-lg border border-slate-800/60">
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>最新位置</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span>上周(5日)</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-400"></span>上月(21日)</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>上季(63日)</div>
             </div>
             
             <div class="flex justify-between text-[10px] text-slate-500 mt-2 px-1">
@@ -50,24 +61,17 @@
             <div class="space-y-2.5">
                 <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
                     <div class="flex flex-col">
-                        <span class="text-sm font-medium">宏观环境得分 (X轴)</span>
-                        <span class="text-[10px] text-slate-500">联储基调 / 美债长线 / VXN绝对值</span>
+                        <span class="text-sm font-medium">当前宏观环境得分 (X轴)</span>
+                        <span class="text-[10px] text-slate-500">美债长线变动与联邦利率常数衍生值</span>
                     </div>
                     <span id="score-macro" class="text-sm font-mono font-bold text-slate-400">0</span>
                 </div>
                 <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
                     <div class="flex flex-col">
-                        <span class="text-sm font-medium">产业动能得分 (Y轴)</span>
-                        <span class="text-[10px] text-slate-500">SOX强弱 / 巨头Capex / 盈利修正</span>
+                        <span class="text-sm font-medium">当前产业动能得分 (Y轴)</span>
+                        <span class="text-[10px] text-slate-500">费城半导体相对强弱与大厂资本开支增速</span>
                     </div>
                     <span id="score-industry" class="text-sm font-mono font-bold text-slate-400">0</span>
-                </div>
-                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <div class="flex flex-col">
-                        <span class="text-sm font-medium">应急预案模块</span>
-                        <span class="text-[10px] text-slate-500">异常波动自动拦截执行</span>
-                    </div>
-                    <span id="status-emergency" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-bold font-mono">准备就绪</span>
                 </div>
             </div>
         </div>
@@ -97,7 +101,6 @@
             for (let y = 3; y >= -3; y--) {
                 for (let x = -3; x <= 3; x++) {
                     const block = document.createElement('div');
-                    // 提高色彩对比度，区分象限
                     if (x >= 0 && y >= 0) block.className = "bg-emerald-950/40"; 
                     else if (x < 0 && y < 0) block.className = "bg-rose-950/30"; 
                     else block.className = "bg-slate-900"; 
@@ -106,47 +109,69 @@
             }
         }
 
-        function renderMatrixDot(x, y) {
-            document.getElementById('matrix-coords').innerText = `(宏观X: ${x > 0 ? '+' : ''}${x}, 产业Y: ${y > 0 ? '+' : ''}${y})`;
-            const dot = document.getElementById('quantum-dot');
-            const dotSolid = document.getElementById('quantum-dot-solid');
-            
-            // 精确像素中心点算法
+        function renderMatrixDot(id, x, y) {
+            const dot = document.getElementById(id);
+            if (!dot) return;
             const percentX = ((x + 3 + 0.5) / 7) * 100;
             const percentY = ((3 - y + 0.5) / 7) * 100;
-
-            dot.style.left = `${percentX}%`; dot.style.top = `${percentY}%`; dot.classList.remove('hidden');
-            dotSolid.style.left = `${percentX}%`; dotSolid.style.top = `${percentY}%`; dotSolid.classList.remove('hidden');
+            dot.style.left = `${percentX}%`; 
+            dot.style.top = `${percentY}%`; 
+            dot.classList.remove('hidden');
         }
 
-        function calculateFinalDecision(X, Y, vxnDayReturn = 0, ndxBias = 0, modeName = "内核内化推演") {
+        // 核心算法：抽取成通用函数，用来计算任意指定历史日期(idx)的坐标点
+        function calculateXYForIndex(results, idx) {
+            const ndxCloses = results[0].indicators.adjclose[0].adjclose;
+            const soxCloses = results[1].indicators.adjclose[0].adjclose;
+            const vxnCloses = results[2].indicators.adjclose[0].adjclose;
+            const tnxCloses = results[3].indicators.adjclose[0].adjclose;
+
+            const currentNDX = ndxCloses[idx];
+            const currentSOX = soxCloses[idx];
+            const currentVXN = vxnCloses[idx];
+            const currentTNX = tnxCloses[idx];
+
+            const oldIdx = Math.max(0, idx - 60); // 同样采用该历史节点前60天的回溯对比
+            const ratioChange = ((currentSOX / currentNDX) - (soxCloses[oldIdx] / ndxCloses[oldIdx])) / (soxCloses[oldIdx] / ndxCloses[oldIdx]);
+            const bondDiff = currentTNX - tnxCloses[oldIdx];
+
+            let bondScore = bondDiff < -0.30 ? 1 : (bondDiff > 0.30 ? -1 : 0);
+            let vxnAbsScore = currentVXN > 35 ? 1 : (currentVXN < 15 ? -1 : 0);
+            let soxRatioScore = ratioChange > 0.05 ? 1 : (ratioChange < -0.05 ? -1 : 0);
+
+            return {
+                X: Math.max(-3, Math.min(3, CONFIG_2026.fedScore + bondScore + vxnAbsScore)),
+                Y: Math.max(-3, Math.min(3, soxRatioScore + CONFIG_2026.capexScore + CONFIG_2026.epsScore)),
+                currentVXN, currentNDX, ndxCloses
+            };
+        }
+
+        function calculateFinalDecision(cur, w, m, q, vxnDayReturn = 0, ndxBias = 0, modeName = "内核内化推演") {
             let finalPosition = 0;
             let regimeText = "";
             const banner = document.getElementById('emergency-banner');
-            const statusEmergency = document.getElementById('status-emergency');
 
             if ((vxnDayReturn > 0.20 && ndxBias < -0.08) || ndxBias < -0.15) {
                 finalPosition = 40;
                 regimeText = "🚨 方案三：黄金坑极端超卖突击";
                 banner.className = "w-full py-2.5 px-4 text-center text-xs font-bold bg-emerald-500 text-slate-950 block";
                 banner.innerText = "🚨 应急多头防御激活：非理性砸盘，系统执行机械式强制买入！";
-                statusEmergency.className = "text-xs px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold font-mono";
-                statusEmergency.innerText = "强突击";
             } else {
                 banner.className = "hidden";
-                statusEmergency.className = "text-xs px-2 py-0.5 rounded-full bg-slate-850 text-slate-400 font-bold font-mono";
-                statusEmergency.innerText = modeName === "智能内化推演" ? "本地协同" : "网络实时";
+                finalPosition = POSITION_MATRIX[cur.Y][cur.X];
 
-                const roundedX = Math.max(-3, Math.min(3, X));
-                const roundedY = Math.max(-3, Math.min(3, Y));
-                finalPosition = POSITION_MATRIX[roundedY][roundedX];
-
-                if (roundedX >= 0 && roundedY >= 0) regimeText = "🟢 右上：戴维斯双击区 (放水 + AI加速)";
-                else if (roundedX < 0 && roundedY >= 0) regimeText = "🟡 左上：重力蹦迪区 (宏观重压 + AI动能强劲)";
-                else if (roundedX >= 0 && roundedY < 0) regimeText = "🟡 右下：虚胖流动性区 (缺乏核心产业催化)";
+                if (cur.X >= 0 && cur.Y >= 0) regimeText = "🟢 右上：戴维斯双击区 (放水 + AI加速)";
+                else if (cur.X < 0 && cur.Y >= 0) regimeText = "🟡 左上：重力蹦迪区 (宏观重压 + AI动能强劲)";
+                else if (cur.X >= 0 && cur.Y < 0) regimeText = "🟡 右下：虚胖流动性区 (缺乏核心产业催化)";
                 else regimeText = "🔴 左下：戴维斯双杀区 (高压抽水 + 产业熄火)";
 
-                renderMatrixDot(roundedX, roundedY);
+                // 渲染多点坐标系
+                document.getElementById('matrix-coords').innerText = `(当前 X: ${cur.X > 0 ? '+' : ''}${cur.X}, Y: ${cur.Y > 0 ? '+' : ''}${cur.Y})`;
+                renderMatrixDot('quantum-dot', cur.X, cur.Y);
+                renderMatrixDot('quantum-dot-solid', cur.X, cur.Y);
+                renderMatrixDot('dot-week', w.X, w.Y);
+                renderMatrixDot('dot-month', m.X, m.Y);
+                renderMatrixDot('dot-quarter', q.X, q.Y);
             }
 
             const posEl = document.getElementById('target-position');
@@ -156,60 +181,58 @@
             else posEl.className = "text-6xl font-black text-rose-500 my-2 tracking-tighter";
 
             document.getElementById('market-regime').innerText = regimeText;
-            document.getElementById('score-macro').innerText = `${X > 0 ? '+' : ''}${X}`;
-            document.getElementById('score-industry').innerText = `${Y > 0 ? '+' : ''}${Y}`;
+            document.getElementById('score-macro').innerText = `${cur.X > 0 ? '+' : ''}${cur.X}`;
+            document.getElementById('score-industry').innerText = `${cur.Y > 0 ? '+' : ''}${cur.Y}`;
             document.getElementById('sync-mode').innerText = modeName;
             document.getElementById('sync-mode').className = modeName === "智能内化推演" ? "text-amber-400" : "text-emerald-400";
             document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
         }
 
         function executeFallback() {
-            // 2026年基准基本面：X=-1 (宏观震荡偏紧), Y=+2 (AI硬件动能极强) -> 仓位 60%
-            calculateFinalDecision(-1, 2, 0, 0, "智能内化推演");
+            // 本地协同模拟轨迹线 (当前:-1,2  上周:0,2  上月:-1,1  上季:-2,1)
+            calculateFinalDecision({X: -1, Y: 2}, {X: 0, Y: 2}, {X: -1, Y: 1}, {X: -2, Y: 1}, 0, 0, "智能内化推演");
         }
 
         async function fetchMarketData() {
             document.getElementById('loading-bar').style.width = '40%';
             const tickers = ['%5ENDX', '%5ESOX', '%5EVXN', '%5ETNX'];
-            const proxy = (t) => `https://corsproxy.io/?${encodeURIComponent(`https://query1.financeapp.yahoo.com/v8/finance/chart/${t}?interval=1d&range=3mo`)}`;
+            // 扩充至 6个月数据源，确保上季度历史追溯计算的完整性
+            const proxy = (t) => `https://corsproxy.io/?${encodeURIComponent(`https://query1.financeapp.yahoo.com/v8/finance/chart/${t}?interval=1d&range=6mo`)}`;
 
             try {
                 const promises = tickers.map(t => fetch(proxy(t)).then(r => r.json()).then(data => data.chart.result[0]));
                 const results = await Promise.all(promises);
                 document.getElementById('loading-bar').style.width = '100%';
 
-                const ndxCloses = results[0].indicators.adjclose[0].adjclose;
-                const soxCloses = results[1].indicators.adjclose[0].adjclose;
-                const vxnCloses = results[2].indicators.adjclose[0].adjclose;
-                const tnxCloses = results[3].indicators.adjclose[0].adjclose;
+                const len = results[0].indicators.adjclose[0].adjclose.length;
+                if (len < 1) throw new Error("无有效数据");
 
-                const currentNDX = ndxCloses[ndxCloses.length - 1];
-                const currentSOX = soxCloses[soxCloses.length - 1];
-                const currentVXN = vxnCloses[vxnCloses.length - 1];
-                const currentTNX = tnxCloses[tnxCloses.length - 1];
+                // 分段截取交易日索引
+                const idxCur = len - 1;
+                const idxWeek = Math.max(0, len - 1 - 5);    // 约 1 周 (5个交易日)
+                const idxMonth = Math.max(0, len - 1 - 21);  // 约 1 个月 (21个交易日)
+                const idxQuarter = Math.max(0, len - 1 - 63); // 约 1 个季度 (63个交易日)
 
-                const oldIdx = Math.max(0, ndxCloses.length - 60);
-                const ratioChange = ((currentSOX / currentNDX) - (soxCloses[oldIdx] / ndxCloses[oldIdx])) / (soxCloses[oldIdx] / ndxCloses[oldIdx]);
-                const bondDiff = currentTNX - tnxCloses[oldIdx];
-                const prevVXN = vxnCloses[vxnCloses.length - 2];
-                const ndxMA20 = ndxCloses.slice(-20).reduce((a, b) => a + b, 0) / 20;
+                const curPoints = calculateXYForIndex(results, idxCur);
+                const weekPoints = calculateXYForIndex(results, idxWeek);
+                const monthPoints = calculateXYForIndex(results, idxMonth);
+                const quarterPoints = calculateXYForIndex(results, idxQuarter);
 
-                let bondScore = bondDiff < -0.30 ? 1 : (bondDiff > 0.30 ? -1 : 0);
-                let vxnAbsScore = currentVXN > 35 ? 1 : (currentVXN < 15 ? -1 : 0);
-                let soxRatioScore = ratioChange > 0.05 ? 1 : (ratioChange < -0.05 ? -1 : 0);
+                const prevVXN = results[2].indicators.adjclose[0].adjclose[idxCur - 1] || curPoints.currentVXN;
+                const ndxClosesArr = results[0].indicators.adjclose[0].adjclose;
+                const ndxMA20 = ndxClosesArr.slice(Math.max(0, idxCur - 19), idxCur + 1).reduce((a, b) => a + b, 0) / Math.min(20, idxCur + 1);
 
-                const X = CONFIG_2026.fedScore + bondScore + vxnAbsScore;
-                const Y = soxRatioScore + CONFIG_2026.capexScore + CONFIG_2026.epsScore;
+                const vxnDayReturn = (curPoints.currentVXN - prevVXN) / prevVXN;
+                const ndxBias = (curPoints.currentNDX - ndxMA20) / ndxMA20;
 
-                calculateFinalDecision(X, Y, (currentVXN - prevVXN) / prevVXN, (currentNDX - ndxMA20) / ndxMA20, "华尔街实时同步");
+                calculateFinalDecision(curPoints, weekPoints, monthPoints, quarterPoints, vxnDayReturn, ndxBias, "华尔街实时同步");
                 setTimeout(() => document.getElementById('loading-bar').style.width = '0', 500);
             } catch (e) {
-                console.warn("网络连接受阻，维持本地智能内核计算。");
+                console.warn("网络请求受阻，执行本地推演路径");
                 document.getElementById('loading-bar').style.width = '0';
             }
         }
 
-        // 核心执行流：先让骨架和基准秒开，再进行异步网络请求
         initMatrixGrid();
         executeFallback(); 
         fetchMarketData();
