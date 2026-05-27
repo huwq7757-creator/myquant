@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nasdaq Quant Terminal</title>
+    <title>Nasdaq Quant Terminal Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .matrix-dot { transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .matrix-dot { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between select-none">
@@ -20,15 +20,43 @@
             <div class="text-xs text-slate-400 font-medium tracking-widest uppercase mb-1">今日纳指 ETF 建议总仓位</div>
             <div id="target-position" class="text-6xl font-black text-amber-400 my-2 tracking-tighter">--%</div>
             <div id="market-regime" class="text-sm font-semibold text-slate-300 px-3 py-1 bg-slate-800/60 rounded-full inline-block">
-                核心量化引擎初始化...
+                量化决策终端初始化...
             </div>
             <div id="loading-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-500 w-0 transition-all duration-300"></div>
         </div>
 
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">💰 5万现金战术协同面板</span>
+                <span class="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 font-bold">左侧突击型</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
+                    <div class="text-[10px] text-slate-500">纳指 ETF</div>
+                    <div class="text-sm font-mono font-bold text-emerald-400">5.40万</div>
+                    <div class="text-[9px] text-slate-400">浮盈 +25%</div>
+                </div>
+                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
+                    <div class="text-[10px] text-slate-500">对冲黄金</div>
+                    <div class="text-sm font-mono font-bold text-amber-500">5.50万</div>
+                    <div class="text-[9px] text-slate-400">浮盈 +6%</div>
+                </div>
+                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
+                    <div class="text-[10px] text-slate-500">待发弹药</div>
+                    <div class="text-sm font-mono font-bold text-sky-400">5.00万</div>
+                    <div class="text-[9px] text-slate-400">现金持仓</div>
+                </div>
+            </div>
+            <div id="action-panel" class="p-3 rounded-xl border transition-all duration-300 bg-slate-950/40 border-slate-800">
+                <div class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">🎯 战术加仓机械化指令</div>
+                <div id="action-command" class="text-xs text-slate-300 leading-relaxed">正在解算多源高频因子...</div>
+            </div>
+        </div>
+
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4">
             <div class="flex justify-between items-center mb-3">
-                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">二维动态坐标矩阵</span>
-                <span id="matrix-coords" class="text-xs font-mono text-slate-400">(X:0, Y:0)</span>
+                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">二维动态坐标矩阵 (高精流体版)</span>
+                <span id="matrix-coords" class="text-xs font-mono text-slate-400">(X:0.00, Y:0.00)</span>
             </div>
             
             <div class="relative w-full aspect-square bg-slate-950 rounded-xl p-px border border-slate-800 overflow-hidden">
@@ -42,42 +70,30 @@
                 <div id="dot-quarter" class="hidden absolute w-2.5 h-2.5 bg-slate-300 rounded-full border border-slate-600 shadow-[0_0_5px_rgba(203,213,225,0.6)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
             </div>
             
-            <div class="flex justify-center items-center gap-3 text-[10px] text-slate-400 mt-2.5 bg-slate-950/50 py-1.5 rounded-lg border border-slate-800/60">
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>最新位置</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span>上周(5日)</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-400"></span>上月(21日)</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>上季(63日)</div>
-            </div>
-            
-            <div class="flex justify-between text-[10px] text-slate-500 mt-2 px-1">
-                <span>← 宏观收紧 (X-)</span>
-                <span>宏观放水 (X+) →</span>
+            <div class="flex justify-center items-center gap-2.5 text-[9px] text-slate-400 mt-2.5 bg-slate-950/50 py-1.5 rounded-lg border border-slate-800/60">
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>当前</div>
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>上周</div>
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>上月</div>
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>上季</div>
             </div>
         </div>
 
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
             <h3 class="text-xs font-bold tracking-wider text-slate-400 uppercase">底层探测器实时状态</h3>
-            
-            <div class="space-y-2.5">
+            <div class="space-y-2">
                 <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <div class="flex flex-col">
-                        <span class="text-sm font-medium">当前宏观环境得分 (X轴)</span>
-                        <span class="text-[10px] text-slate-500">美债长线变动与联邦利率常数衍生值</span>
-                    </div>
-                    <span id="score-macro" class="text-sm font-mono font-bold text-slate-400">0</span>
+                    <span class="text-xs text-slate-300">宏观环境连续分值 (X轴)</span>
+                    <span id="score-macro" class="text-xs font-mono font-bold text-slate-400">0.00</span>
                 </div>
                 <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <div class="flex flex-col">
-                        <span class="text-sm font-medium">当前产业动能得分 (Y轴)</span>
-                        <span class="text-[10px] text-slate-500">费城半导体相对强弱与大厂资本开支增速</span>
-                    </div>
-                    <span id="score-industry" class="text-sm font-mono font-bold text-slate-400">0</span>
+                    <span class="text-xs text-slate-300">产业动能连续分值 (Y轴)</span>
+                    <span id="score-industry" class="text-xs font-mono font-bold text-slate-400">0.00</span>
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="p-4 text-center border-t border-slate-900 bg-slate-950/80 backdrop-blur-md">
+    <footer class="p-3 text-center border-t border-slate-900 bg-slate-950/80 backdrop-blur-md">
         <div class="text-[10px] text-slate-500 tracking-wider">
             数据链状态: <span id="sync-mode" class="text-amber-400">加载中</span> • <span id="sync-time">--:--:--</span>
         </div>
@@ -101,12 +117,33 @@
             for (let y = 3; y >= -3; y--) {
                 for (let x = -3; x <= 3; x++) {
                     const block = document.createElement('div');
-                    if (x >= 0 && y >= 0) block.className = "bg-emerald-950/40"; 
-                    else if (x < 0 && y < 0) block.className = "bg-rose-950/30"; 
-                    else block.className = "bg-slate-900"; 
+                    if (x >= 0 && y >= 0) block.className = "bg-emerald-950/20"; 
+                    else if (x < 0 && y < 0) block.className = "bg-rose-950/20"; 
+                    else block.className = "bg-slate-900/60"; 
                     container.appendChild(block);
                 }
             }
+        }
+
+        // 高精双线性插值算法：使矩阵百分比连续平滑渐变
+        function interpolatePosition(x, y) {
+            x = Math.max(-3, Math.min(3, x));
+            y = Math.max(-3, Math.min(3, y));
+            const x1 = Math.floor(x);
+            const x2 = Math.min(3, x1 + 1);
+            const y1 = Math.floor(y);
+            const y2 = Math.min(3, y1 + 1);
+
+            const q11 = POSITION_MATRIX[String(y1)][String(x1)] || 0;
+            const q21 = POSITION_MATRIX[String(y1)][String(x2)] || 0;
+            const q12 = POSITION_MATRIX[String(y2)][String(x1)] || 0;
+            const q22 = POSITION_MATRIX[String(y2)][String(x2)] || 0;
+
+            const fx = x - x1;
+            const fy = y - y1;
+            const r1 = q11 * (1 - fx) + q21 * fx;
+            const r2 = q12 * (1 - fx) + q22 * fx;
+            return Math.round(r1 * (1 - fy) + r2 * fy);
         }
 
         function renderMatrixDot(id, x, y) {
@@ -119,7 +156,7 @@
             dot.classList.remove('hidden');
         }
 
-        // 核心算法：抽取成通用函数，用来计算任意指定历史日期(idx)的坐标点
+        // 升级：从死板阶梯变换升级为高分辨率连续浮点分值计算
         function calculateXYForIndex(results, idx) {
             const ndxCloses = results[0].indicators.adjclose[0].adjclose;
             const soxCloses = results[1].indicators.adjclose[0].adjclose;
@@ -131,13 +168,14 @@
             const currentVXN = vxnCloses[idx];
             const currentTNX = tnxCloses[idx];
 
-            const oldIdx = Math.max(0, idx - 60); // 同样采用该历史节点前60天的回溯对比
+            const oldIdx = Math.max(0, idx - 60); 
             const ratioChange = ((currentSOX / currentNDX) - (soxCloses[oldIdx] / ndxCloses[oldIdx])) / (soxCloses[oldIdx] / ndxCloses[oldIdx]);
             const bondDiff = currentTNX - tnxCloses[oldIdx];
 
-            let bondScore = bondDiff < -0.30 ? 1 : (bondDiff > 0.30 ? -1 : 0);
-            let vxnAbsScore = currentVXN > 35 ? 1 : (currentVXN < 15 ? -1 : 0);
-            let soxRatioScore = ratioChange > 0.05 ? 1 : (ratioChange < -0.05 ? -1 : 0);
+            // 连续线性映射公式化代替阶梯硬阈值
+            let bondScore = Math.max(-1, Math.min(1, -bondDiff / 0.30)); 
+            let vxnAbsScore = Math.max(-1, Math.min(1, (currentVXN - 25) / 10)); 
+            let soxRatioScore = Math.max(-1, Math.min(1, ratioChange / 0.05)); 
 
             return {
                 X: Math.max(-3, Math.min(3, CONFIG_2026.fedScore + bondScore + vxnAbsScore)),
@@ -149,54 +187,73 @@
         function calculateFinalDecision(cur, w, m, q, vxnDayReturn = 0, ndxBias = 0, modeName = "内核内化推演") {
             let finalPosition = 0;
             let regimeText = "";
+            let isEmergency = false;
             const banner = document.getElementById('emergency-banner');
 
             if ((vxnDayReturn > 0.20 && ndxBias < -0.08) || ndxBias < -0.15) {
                 finalPosition = 40;
-                regimeText = "🚨 方案三：黄金坑极端超卖突击";
+                isEmergency = true;
+                regimeText = "🚨 黄金坑极端超卖突击";
                 banner.className = "w-full py-2.5 px-4 text-center text-xs font-bold bg-emerald-500 text-slate-950 block";
                 banner.innerText = "🚨 应急多头防御激活：非理性砸盘，系统执行机械式强制买入！";
             } else {
                 banner.className = "hidden";
-                finalPosition = POSITION_MATRIX[cur.Y][cur.X];
+                finalPosition = interpolatePosition(cur.X, cur.Y);
 
-                if (cur.X >= 0 && cur.Y >= 0) regimeText = "🟢 右上：戴维斯双击区 (放水 + AI加速)";
-                else if (cur.X < 0 && cur.Y >= 0) regimeText = "🟡 左上：重力蹦迪区 (宏观重压 + AI动能强劲)";
-                else if (cur.X >= 0 && cur.Y < 0) regimeText = "🟡 右下：虚胖流动性区 (缺乏核心产业催化)";
-                else regimeText = "🔴 左下：戴维斯双杀区 (高压抽水 + 产业熄火)";
-
-                // 渲染多点坐标系
-                document.getElementById('matrix-coords').innerText = `(当前 X: ${cur.X > 0 ? '+' : ''}${cur.X}, Y: ${cur.Y > 0 ? '+' : ''}${cur.Y})`;
-                renderMatrixDot('quantum-dot', cur.X, cur.Y);
-                renderMatrixDot('quantum-dot-solid', cur.X, cur.Y);
-                renderMatrixDot('dot-week', w.X, w.Y);
-                renderMatrixDot('dot-month', m.X, m.Y);
-                renderMatrixDot('dot-quarter', q.X, q.Y);
+                if (cur.X >= 0 && cur.Y >= 0) regimeText = "🟢 右上：戴维斯双击区 (流动性+AI双驱动)";
+                else if (cur.X < 0 && cur.Y >= 0) regimeText = "🟡 左上：重力蹦迪区 (宏观逆风+AI产业强劲)";
+                else if (cur.X >= 0 && cur.Y < 0) regimeText = "🟡 右下：虚胖流动性区 (缺乏半导体核心催化)";
+                else regimeText = "🔴 左下：戴维斯双杀区 (高压抽水+产业失速)";
             }
 
+            // 渲染精密多点坐标系
+            document.getElementById('matrix-coords').innerText = `(当前 X: ${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}, Y: ${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)})`;
+            renderMatrixDot('quantum-dot', cur.X, cur.Y);
+            renderMatrixDot('quantum-dot-solid', cur.X, cur.Y);
+            renderMatrixDot('dot-week', w.X, w.Y);
+            renderMatrixDot('dot-month', m.X, m.Y);
+            renderMatrixDot('dot-quarter', q.X, q.Y);
+
+            // 更新大卡片
             const posEl = document.getElementById('target-position');
             posEl.innerText = `${finalPosition}%`;
             if (finalPosition >= 70) posEl.className = "text-6xl font-black text-emerald-400 my-2 tracking-tighter";
             else if (finalPosition >= 40) posEl.className = "text-6xl font-black text-amber-400 my-2 tracking-tighter";
             else posEl.className = "text-6xl font-black text-rose-500 my-2 tracking-tighter";
-
             document.getElementById('market-regime').innerText = regimeText;
-            document.getElementById('score-macro').innerText = `${cur.X > 0 ? '+' : ''}${cur.X}`;
-            document.getElementById('score-industry').innerText = `${cur.Y > 0 ? '+' : ''}${cur.Y}`;
+
+            // 实战资产联动指令模块
+            const actionPanel = document.getElementById('action-panel');
+            const actionCmd = document.getElementById('action-command');
+            
+            if (isEmergency) {
+                actionPanel.className = "p-3 rounded-xl border bg-rose-950/40 border-rose-500/50 animate-pulse";
+                actionCmd.innerHTML = `<span class="text-rose-400 font-bold">【🚀 第二级火箭·核心突击】</span><br>当前触发黄金坑极端防御阈值！无视外界恐慌，建议立即动用待发弹药中的 <b class="text-white text-base font-mono">20,000</b> 元单枪直入左侧强攻，扩大利润垫！`;
+            } else if (cur.X < -0.8 || cur.Y < 0.3) {
+                actionPanel.className = "p-3 rounded-xl border bg-amber-950/30 border-amber-500/40";
+                actionCmd.innerHTML = `<span class="text-amber-400 font-bold">【🏹 第一级火箭·前锋低吸】</span><br>矩阵点开始切入左侧左下防御区。建议动用待发弹药中的 <b class="text-white text-base font-mono">15,000</b> 元分批防御性建仓，借助25%老浮盈硬踩半年线。`;
+            } else if (cur.X > 0.8 && cur.Y > 1.5) {
+                actionPanel.className = "p-3 rounded-xl border bg-emerald-950/20 border-emerald-500/30";
+                actionCmd.innerHTML = `<span class="text-emerald-400 font-bold">【🛡️ 战术静默·拒绝抬轿】</span><br>红点处于安全上行波段高位。建议50,000元现金老实按兵不动，拒绝为高位筹码抬轿，全力保护原仓位25%纯洁利润线。`;
+            } else {
+                actionPanel.className = "p-3 rounded-xl border bg-slate-950/50 border-slate-800";
+                actionCmd.innerHTML = `<span class="text-slate-300 font-bold">【💤 蓄势守候·持币观望】</span><br>大盘处于常规中性震荡区间，未触及极端左侧击发条件。5万子弹继续锁定，静待雷达红光报警。`;
+            }
+
+            document.getElementById('score-macro').innerText = `${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}`;
+            document.getElementById('score-industry').innerText = `${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)}`;
             document.getElementById('sync-mode').innerText = modeName;
             document.getElementById('sync-mode').className = modeName === "智能内化推演" ? "text-amber-400" : "text-emerald-400";
             document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
         }
 
         function executeFallback() {
-            // 本地协同模拟轨迹线 (当前:-1,2  上周:0,2  上月:-1,1  上季:-2,1)
-            calculateFinalDecision({X: -1, Y: 2}, {X: 0, Y: 2}, {X: -1, Y: 1}, {X: -2, Y: 1}, 0, 0, "智能内化推演");
+            calculateFinalDecision({X: -0.42, Y: 1.65}, {X: 0.15, Y: 1.80}, {X: -0.30, Y: 1.20}, {X: -1.10, Y: 0.85}, 0, 0, "智能内化推演");
         }
 
         async function fetchMarketData() {
             document.getElementById('loading-bar').style.width = '40%';
             const tickers = ['%5ENDX', '%5ESOX', '%5EVXN', '%5ETNX'];
-            // 扩充至 6个月数据源，确保上季度历史追溯计算的完整性
             const proxy = (t) => `https://corsproxy.io/?${encodeURIComponent(`https://query1.financeapp.yahoo.com/v8/finance/chart/${t}?interval=1d&range=6mo`)}`;
 
             try {
@@ -207,11 +264,10 @@
                 const len = results[0].indicators.adjclose[0].adjclose.length;
                 if (len < 1) throw new Error("无有效数据");
 
-                // 分段截取交易日索引
                 const idxCur = len - 1;
-                const idxWeek = Math.max(0, len - 1 - 5);    // 约 1 周 (5个交易日)
-                const idxMonth = Math.max(0, len - 1 - 21);  // 约 1 个月 (21个交易日)
-                const idxQuarter = Math.max(0, len - 1 - 63); // 约 1 个季度 (63个交易日)
+                const idxWeek = Math.max(0, len - 1 - 5);    
+                const idxMonth = Math.max(0, len - 1 - 21);  
+                const idxQuarter = Math.max(0, len - 1 - 63); 
 
                 const curPoints = calculateXYForIndex(results, idxCur);
                 const weekPoints = calculateXYForIndex(results, idxWeek);
@@ -228,7 +284,7 @@
                 calculateFinalDecision(curPoints, weekPoints, monthPoints, quarterPoints, vxnDayReturn, ndxBias, "华尔街实时同步");
                 setTimeout(() => document.getElementById('loading-bar').style.width = '0', 500);
             } catch (e) {
-                console.warn("网络请求受阻，执行本地推演路径");
+                console.warn("网络受阻，执行离线智能算法");
                 document.getElementById('loading-bar').style.width = '0';
             }
         }
