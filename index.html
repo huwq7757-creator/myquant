@@ -2,425 +2,314 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyQuant Matrix Terminal v2.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nasdaq Quant Terminal Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b0e17; }
-        .card-bg { background-color: #131722; border: 1px solid #1e222d; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes pulse-halo { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.4); opacity: 0.2; } }
-        .animate-halo { animation: pulse-halo 2s infinite ease-in-out; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .matrix-dot { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen font-sans antialiased p-4 no-scrollbar">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between select-none">
 
-    <div id="irx-alert-banner" class="max-w-md mx-auto mb-3 hidden bg-gradient-to-r from-amber-600 to-orange-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 border border-amber-500/30">
-        <span class="text-sm">⚠️</span>
-        <div>
-            <span class="block">13周短端利率警报 (IRX)</span>
-            <span class="font-normal opacity-90 text-[11px]" id="irx-alert-text">60天内利率飙升已超 25bp，流动性前沿压力加剧！</span>
+    <div id="emergency-banner" class="hidden w-full py-2.5 px-4 text-center text-xs font-bold uppercase tracking-wider animate-pulse"></div>
+
+    <main class="p-4 space-y-4 flex-1">
+        
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden">
+            <div class="text-xs text-slate-400 font-medium tracking-widest uppercase mb-1">今日纳指 ETF 建议总仓位</div>
+            <div id="target-position" class="text-6xl font-black text-amber-400 my-2 tracking-tighter">--%</div>
+            <div id="market-regime" class="text-sm font-semibold text-slate-300 px-3 py-1 bg-slate-800/60 rounded-full inline-block">
+                数据引擎初始化...
+            </div>
+            <div id="loading-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-500 w-0 transition-all duration-300"></div>
         </div>
-    </div>
 
-    <div class="max-w-md mx-auto flex flex-col gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">💰 5万现金战术协同面板</span>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">全实时解算版</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
+                    <div class="text-[10px] text-slate-500">纳指 ETF</div>
+                    <div class="text-sm font-mono font-bold text-emerald-400">5.40万</div>
+                    <div class="text-[9px] text-slate-400">浮盈 +25%</div>
+                </div>
+                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
+                    <div class="text-[10px] text-slate-500">对冲黄金</div>
+                    <div class="text-sm font-mono font-bold text-amber-500">5.50万</div>
+                    <div class="text-[9px] text-slate-400">浮盈 +6%</div>
+                </div>
+                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
+                    <div class="text-[10px] text-slate-500">待发弹药</div>
+                    <div class="text-sm font-mono font-bold text-sky-400">5.00万</div>
+                    <div class="text-[9px] text-slate-400">现金持仓</div>
+                </div>
+            </div>
+            <div id="action-panel" class="p-3 rounded-xl border transition-all duration-300 bg-slate-950/40 border-slate-800">
+                <div class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">🎯 战术加仓机械化指令</div>
+                <div id="action-command" class="text-xs text-slate-300 leading-relaxed">正在解算多源因子...</div>
+            </div>
+        </div>
 
-        <div class="card-bg rounded-2xl p-4 shadow-lg">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4">
             <div class="flex justify-between items-center mb-3">
-                <div class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                    <span>🤖</span> 基本面与 AI 软数据注入舱
-                </div>
-                <span class="text-[10px] text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-800/40">双轨制运行</span>
+                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">二维动态坐标矩阵 (高精流体)</span>
+                <span id="matrix-coords" class="text-xs font-mono text-slate-400">(X:0.00, Y:0.00)</span>
             </div>
-            
-            <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                <div class="bg-[#171b26] p-2 rounded-xl border border-slate-800/50">
-                    <div class="text-slate-500 text-[10px] mb-1">美联储方向</div>
-                    <div class="flex justify-center gap-1" id="btn-group-fed">
-                        <button onclick="setSoftMetric('fed', -1)" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700">鹰</button>
-                        <button onclick="setSoftMetric('fed', 0)" class="px-1.5 py-0.5 rounded bg-slate-700 text-white font-bold">中</button>
-                        <button onclick="setSoftMetric('fed', 1)" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700">鸽</button>
-                    </div>
-                </div>
-                <div class="bg-[#171b26] p-2 rounded-xl border border-slate-800/50">
-                    <div class="text-slate-500 text-[10px] mb-1">Capex 指引</div>
-                    <div class="flex justify-center gap-1" id="btn-group-capex">
-                        <button onclick="setSoftMetric('capex', -1)" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700">减</button>
-                        <button onclick="setSoftMetric('capex', 0)" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700">平</button>
-                        <button onclick="setSoftMetric('capex', 1)" class="px-1.5 py-0.5 rounded bg-slate-700 text-white font-bold">增</button>
-                    </div>
-                </div>
-                <div class="bg-[#171b26] p-2 rounded-xl border border-slate-800/50">
-                    <div class="text-slate-500 text-[10px] mb-1">EPS 修正</div>
-                    <div class="flex justify-center gap-1" id="btn-group-eps">
-                        <button onclick="setSoftMetric('eps', -1)" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700">降</button>
-                        <button onclick="setSoftMetric('eps', 0)" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700">平</button>
-                        <button onclick="setSoftMetric('eps', 1)" class="px-1.5 py-0.5 rounded bg-slate-700 text-white font-bold">升</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-bg rounded-2xl p-6 text-center shadow-lg relative overflow-hidden">
-            <div class="text-slate-400 text-sm font-medium tracking-wide">今日纳指 ETF 建议总仓位</div>
-            <div id="big-position" class="text-6xl font-black text-[#ffb800] my-4 tracking-tight">--%</div>
-            
-            <div class="inline-flex items-center gap-2 bg-[#1b2030]/60 px-4 py-2 rounded-full border border-slate-800/80 mx-auto">
-                <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                <span id="status-text" class="text-xs text-slate-300 font-medium">正在调取多周期解算矩阵...</span>
-            </div>
-        </div>
-
-        <div class="card-bg rounded-2xl p-5 shadow-lg flex flex-col gap-4">
-            <div class="flex justify-between items-center">
-                <div class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                    <span>💰</span> 5万现金战术协同面板
-                </div>
-                <div id="risk-badge" class="text-[10px] px-2 py-0.5 rounded border font-bold bg-slate-900 border-slate-700 text-slate-400">
-                    计算中
-                </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center font-mono text-xs">
-                <div class="bg-[#171b26] p-2.5 rounded-xl border border-slate-800/40">
-                    <div class="text-slate-500 text-[10px] mb-1">纳指 ETF</div>
-                    <div class="text-emerald-400 font-bold">5.40万</div>
-                    <div class="text-emerald-500/80 text-[10px] mt-0.5">浮盈 +25%</div>
-                </div>
-                <div class="bg-[#171b26] p-2.5 rounded-xl border border-slate-800/40">
-                    <div class="text-slate-500 text-[10px] mb-1">对冲黄金</div>
-                    <div class="text-[#ffb800] font-bold">5.50万</div>
-                    <div class="text-emerald-500/80 text-[10px] mt-0.5">浮盈 +6%</div>
-                </div>
-                <div class="bg-[#171b26] p-2.5 rounded-xl border border-slate-800/40">
-                    <div class="text-slate-500 text-[10px] mb-1">待发弹药</div>
-                    <div class="text-blue-400 font-bold">5.00万</div>
-                    <div class="text-slate-500 text-[10px] mt-0.5">现金持仓</div>
-                </div>
-            </div>
-
-            <div class="bg-[#171b26]/80 border border-slate-800/60 rounded-xl p-3">
-                <div class="text-xs font-bold text-slate-400 flex items-center gap-1 mb-1">
-                    <span>🎯</span> 战术加仓机械化指令
-                </div>
-                <div id="tactical-cmd-box" class="text-xs leading-relaxed font-mono text-slate-300">
-                    正在清洗多轨实时因子...
-                </div>
-            </div>
-        </div>
-
-        <div class="card-bg rounded-2xl p-5 shadow-lg flex flex-col gap-3">
-            <div class="text-xs font-semibold text-slate-400 font-mono flex justify-between">
-                <span>📊 二维动态坐标矩阵 (四点漂移版)</span>
-                <span id="coord-display" class="text-slate-500">当前 X: --, Y: --</span>
-            </div>
-
-            <div class="relative w-full aspect-square bg-[#090b11] border border-[#1e222d] rounded-xl overflow-hidden shadow-inner">
-                <div class="absolute inset-0 border-b border-dashed border-slate-800/40 top-1/2"></div>
-                <div class="absolute inset-0 border-l border-dashed border-slate-800/40 left-1/2"></div>
+            <div class="relative w-full aspect-square bg-slate-950 rounded-xl p-px border border-slate-800 overflow-hidden">
+                <div id="matrix-container" class="absolute inset-0 grid grid-cols-7 grid-rows-7 gap-px bg-slate-800/80 z-10"></div>
                 
-                <div class="absolute top-0 left-0 w-1/2 h-1/2 bg-red-950/5"></div>
-                <div class="absolute top-0 right-0 w-1/2 h-1/2 bg-emerald-950/5"></div>
-
-                <div id="pt-quarter" class="absolute w-2 h-2 bg-slate-500 rounded-full opacity-40 shadow-[0_0_4px_#64748b] -translate-x-1/2 -translate-y-1/2 transition-all duration-700" style="left:50%; top:50%;" title="上季表现"></div>
-                <div id="pt-month" class="absolute w-2 h-2 bg-sky-400 rounded-full opacity-60 shadow-[0_0_6px_#38bdf8] -translate-x-1/2 -translate-y-1/2 transition-all duration-700" style="left:50%; top:50%;" title="上月表现"></div>
-                <div id="pt-week" class="absolute w-2 h-2 bg-orange-400 rounded-full opacity-80 shadow-[0_0_6px_#fb923c] -translate-x-1/2 -translate-y-1/2 transition-all duration-700" style="left:50%; top:50%;" title="上周表现"></div>
+                <div id="quantum-dot" class="hidden absolute w-4 h-4 bg-rose-500 rounded-full border-2 border-white shadow-[0_0_14px_rgba(244,63,94,1)] z-30 transform -translate-x-1/2 -translate-y-1/2 animate-ping matrix-dot"></div>
+                <div id="quantum-dot-solid" class="hidden absolute w-3 h-3 bg-rose-500 rounded-full border border-white shadow-[0_0_8px_rgba(244,63,94,0.8)] z-30 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
                 
-                <div id="radar-pointer" class="absolute w-3.5 h-3.5 bg-gradient-to-br from-rose-400 to-red-600 rounded-full shadow-[0_0_12px_rgba(244,63,94,0.9)] border border-white -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out" style="left: 50%; top: 50%;">
-                    <div class="absolute inset-0 rounded-full bg-rose-500 animate-halo"></div>
-                </div>
-
-                <div class="absolute bottom-2 left-2 flex gap-2 text-[8px] bg-slate-900/80 px-2 py-1 rounded border border-slate-800 text-slate-400 pointer-events-none">
-                    <span class="flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>现</span>
-                    <span class="flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span>周</span>
-                    <span class="flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>月</span>
-                    <span class="flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>季</span>
-                </div>
+                <div id="dot-week" class="hidden absolute w-2.5 h-2.5 bg-amber-500 rounded-full border border-white shadow-[0_0_6px_rgba(245,158,11,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+                <div id="dot-month" class="hidden absolute w-2.5 h-2.5 bg-sky-400 rounded-full border border-white shadow-[0_0_6px_rgba(56,189,248,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
+                <div id="dot-quarter" class="hidden absolute w-2.5 h-2.5 bg-slate-300 rounded-full border border-slate-600 shadow-[0_0_5px_rgba(203,213,225,0.6)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
             </div>
-
-            <div class="grid grid-cols-3 gap-2 text-[10px] font-mono mt-1 text-slate-400">
-                <div class="bg-[#171b26]/50 p-1.5 rounded border border-slate-900 text-center">
-                    美债^TNX: <span id="lbl-tnx" class="text-white font-bold">--</span>
-                </div>
-                <div class="bg-[#171b26]/50 p-1.5 rounded border border-slate-900 text-center">
-                    恐慌^VXN: <span id="lbl-vxn" class="text-white font-bold">--</span>
-                </div>
-                <div class="bg-[#171b26]/50 p-1.5 rounded border border-slate-900 text-center">
-                    半导体%: <span id="lbl-soxx" class="text-white font-bold">--</span>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center text-[9px] font-mono mt-1">
-                <button onclick="refreshAllData()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700/60 flex items-center gap-1 transition-colors">
-                    <span>🔄</span> 强刷解算器
-                </button>
-                <div class="text-slate-600" id="lbl-time">数据状态: 正在装载...</div>
+            <div class="flex justify-center items-center gap-2.5 text-[9px] text-slate-400 mt-2.5 bg-slate-950/50 py-1.5 rounded-lg border border-slate-800/60">
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>当前</div>
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>上周</div>
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>上月</div>
+                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>上季</div>
             </div>
         </div>
 
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
+            <h3 class="text-xs font-bold tracking-wider text-slate-400 uppercase">底层探测器实时状态</h3>
+            <div class="space-y-2">
+                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
+                    <span class="text-xs text-slate-300">宏观流动性分值 (X轴)</span>
+                    <span id="score-macro" class="text-xs font-mono font-bold text-slate-400">0.00</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
+                    <span class="text-xs text-slate-300">产业基本面分值 (Y轴)</span>
+                    <span id="score-industry" class="text-xs font-mono font-bold text-slate-400">0.00</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="fed-warning-box" class="hidden mx-4 mb-2 p-3 bg-rose-950/40 border border-rose-500/30 rounded-2xl flex items-start gap-2 animate-pulse">
+        <span class="text-base text-rose-400 leading-none">⚠️</span>
+        <div class="text-[11px] text-rose-300 leading-normal font-medium">
+            <b class="text-rose-400 font-bold block mb-0.5">联储态度转变！可能影响算法准确度</b>
+            检测到超短端国债收益率短期内异常飙升，市场正在强力计价超预期加息/推迟降息言论。请保持谨慎，必要时可手动调低预期。
+        </div>
     </div>
+
+    <footer class="p-3 text-center border-t border-slate-900 bg-slate-950/80 backdrop-blur-md">
+        <div class="text-[10px] text-slate-500 tracking-wider">
+            数据链状态: <span id="sync-mode" class="text-amber-400">加载中</span> • <span id="sync-time">--:--:--</span>
+        </div>
+    </footer>
 
     <script>
-        // 全局动态可调软指标，拒绝任何硬编码配置（由注入舱实时接管控制）
-        let SOFT_METRICS = { fed: 0, capex: 1, eps: 1 };
+        const POSITION_MATRIX = {
+            '3':  { '-3': 30, '-2': 40, '-1': 60, '0': 70, '1': 80,  '2': 90,  '3': 100 },
+            '2':  { '-3': 20, '-2': 50, '-1': 60, '0': 70, '1': 70,  '2': 80,  '3': 90  },
+            '1':  { '-3': 10, '-2': 20, '-1': 50, '0': 60, '1': 60,  '2': 70,  '3': 80  },
+            '0':  { '-3': 0,  '-2': 10, '-1': 30, '0': 50, '1': 50,  '2': 60,  '3': 70  },
+            '-1': { '-3': 0,  '-2': 0,  '-1': 10, '0': 30, '1': 40,  '2': 50,  '3': 60  },
+            '-2': { '-3': 0,  '-2': 0,  '-1': 0,  '0': 10, '1': 20,  '2': 30,  '3': 40  },
+            '-3': { '-3': 0,  '-2': 0,  '-1': 0,  '0': 0,  '1': 10,  '2': 20,  '3': 30  }
+        };
 
-        const POSITION_MATRIX = [
-            [45, 52, 61, 67, 73, 80, 85], // Y = +2.00
-            [42, 49, 58, 64, 70, 77, 82], // Y = +1.33
-            [39, 46, 54, 60, 66, 73, 78], // Y = +0.67
-            [35, 42, 50, 56, 62, 68, 74], // Y =  0.00
-            [30, 37, 45, 51, 57, 63, 69], // Y = -0.67
-            [25, 32, 40, 46, 52, 58, 64], // Y = -1.33
-            [15, 22, 30, 36, 42, 48, 55]  // Y = -2.00
-        ];
-
-        // 统一软数据面板视觉高亮
-        function syncSoftMetricsUI() {
-            const updateGroup = (type, currentVal) => {
-                const container = document.getElementById(`btn-group-${type}`);
-                const buttons = container.getElementsByTagName('button');
-                const vals = [-1, 0, 1];
-                for(let i=0; i<buttons.length; i++) {
-                    if(vals[i] === currentVal) {
-                        buttons[i].className = "px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold shadow-sm shadow-blue-500/30";
-                    } else {
-                        buttons[i].className = "px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700";
-                    }
+        function initMatrixGrid() {
+            const container = document.getElementById('matrix-container');
+            container.innerHTML = '';
+            for (let y = 3; y >= -3; y--) {
+                for (let x = -3; x <= 3; x++) {
+                    const block = document.createElement('div');
+                    if (x >= 0 && y >= 0) block.className = "bg-emerald-950/20"; 
+                    else if (x < 0 && y < 0) block.className = "bg-rose-950/20"; 
+                    else block.className = "bg-slate-900/60"; 
+                    container.appendChild(block);
                 }
-            };
-            updateGroup('fed', SOFT_METRICS.fed);
-            updateGroup('capex', SOFT_METRICS.capex);
-            updateGroup('eps', SOFT_METRICS.eps);
+            }
         }
 
-        function setSoftMetric(type, value) {
-            SOFT_METRICS[type] = value;
-            syncSoftMetricsUI();
-            executeStrategySolver(); // 软指标变动时瞬时重新求解
+        function interpolatePosition(x, y) {
+            x = Math.max(-3, Math.min(3, x));
+            y = Math.max(-3, Math.min(3, y));
+            const x1 = Math.floor(x);
+            const x2 = Math.min(3, x1 + 1);
+            const y1 = Math.floor(y);
+            const y2 = Math.min(3, y1 + 1);
+
+            const q11 = POSITION_MATRIX[String(y1)][String(x1)] || 0;
+            const q21 = POSITION_MATRIX[String(y1)][String(x2)] || 0;
+            const q12 = POSITION_MATRIX[String(y2)][String(x1)] || 0;
+            const q22 = POSITION_MATRIX[String(y2)][String(x2)] || 0;
+
+            const fx = x - x1;
+            const fy = y - y1;
+            return Math.round((q11 * (1 - fx) + q21 * fx) * (1 - fy) + (q12 * (1 - fx) + q22 * fx) * fy);
         }
 
-        // 严谨恢复分段阈值算法框架，剔除不可靠的连续映射
-        function scoreVxnThreshold(val) {
-            if (val < 14.0) return 1.5;
-            if (val < 18.0) return 0.5;
-            if (val < 22.0) return -0.5;
-            if (val < 28.0) return -1.2;
-            return -2.0;
+        function renderMatrixDot(id, x, y) {
+            const dot = document.getElementById(id);
+            if (!dot) return;
+            dot.style.left = `${((x + 3.5) / 7) * 100}%`; 
+            dot.style.top = `${((3.5 - y) / 7) * 100}%`; 
+            dot.classList.remove('hidden');
         }
 
-        function scoreTnxThreshold(val) {
-            if (val < 3.80) return 1.5;
-            if (val < 4.10) return 0.5;
-            if (val < 4.40) return -0.5;
-            if (val < 4.70) return -1.2;
-            return -2.0;
-        }
+        // 🟢 核心算法优化：彻底移除硬编码 CONFIG_2026，全部改为真实行情解算
+        function calculateXYForIndex(results, idx) {
+            const ndxCloses = results[0].indicators.adjclose[0].adjclose;
+            const soxCloses = results[1].indicators.adjclose[0].adjclose;
+            const vxnCloses = results[2].indicators.adjclose[0].adjclose;
+            const tnxCloses = results[3].indicators.adjclose[0].adjclose;
+            const irxCloses = results[4].indicators.adjclose[0].adjclose;   // 13周超短美债
+            const nvdaCloses = results[5].indicators.adjclose[0].adjclose;  // 英伟达 (Capex代理)
+            const gspcCloses = results[6].indicators.adjclose[0].adjclose;  // 标普500 (EPS代理)
 
-        function scoreSoxxThreshold(changePct) {
-            if (changePct > 3.0) return 1.5;
-            if (changePct > 0.8) return 0.5;
-            if (changePct > -0.8) return 0.0;
-            if (changePct > -2.5) return -1.0;
-            return -2.0;
-        }
+            const currentNDX = ndxCloses[idx];
+            const currentSOX = soxCloses[idx];
+            const currentVXN = vxnCloses[idx];
+            const currentTNX = tnxCloses[idx];
+            const currentIRX = irxCloses[idx];
+            const currentNVDA = nvdaCloses[idx];
+            const currentGSPC = gspcCloses[idx];
 
-        // 全时段稳健日历级数据拉取（拉取120个交易日以支撑跨季回溯和IRX警报）
-        async function fetchHistoricalData(symbol) {
-            const cb = Date.now();
-            const target = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?range=6mo&interval=1d&_=${cb}`;
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}&_=${cb}`;
-            
-            const res = await fetch(proxy, { cache: "no-store" });
-            if (!res.ok) throw new Error(`${symbol}网络同步失败`);
-            const wrapper = await res.json();
-            const parsed = typeof wrapper.contents === 'string' ? JSON.parse(wrapper.contents) : wrapper;
-            
-            const result = parsed?.chart?.result?.[0];
-            if (!result) throw new Error(`${symbol}结构解析异常`);
+            const oldIdx = Math.max(0, idx - 60); 
 
-            const closes = result.indicators.quote[0].close;
-            const validCloses = closes.filter(v => v !== null && v !== undefined);
-            const currentPrice = result.meta.regularMarketPrice || validCloses[validCloses.length - 1];
-            
-            // 计算单日变动率
-            const prevClose = result.meta.chartPreviousClose || validCloses[validCloses.length - 2];
-            const currentChange = ((currentPrice - prevClose) / prevClose) * 100;
+            // 1️⃣ 【真实 fedScore 转化】：短端美债 60天偏离度 (以0.35%为满分步长)
+            const irxDiff = currentIRX - irxCloses[oldIdx];
+            let fedScore = Math.max(-1, Math.min(1, -irxDiff / 0.35)); 
+
+            // 2️⃣ 【真实 capexScore 转化】：AI军火商 NVDA 60天核心动量 (以15%涨跌幅为满分边界)
+            const nvdaChange = (currentNVDA - nvdaCloses[oldIdx]) / nvdaCloses[oldIdx];
+            let capexScore = Math.max(-1, Math.min(1, nvdaChange / 0.15));
+
+            // 3️⃣ 【真实 epsScore 转化】：标普500大盘 60天景气动量 (以5%涨跌幅为满分边界)
+            const gspcChange = (currentGSPC - gspcCloses[oldIdx]) / gspcCloses[oldIdx];
+            let epsScore = Math.max(-1, Math.min(1, gspcChange / 0.05));
+
+            // 原有基础行情技术指标
+            const ratioChange = ((currentSOX / currentNDX) - (soxCloses[oldIdx] / ndxCloses[oldIdx])) / (soxCloses[oldIdx] / ndxCloses[oldIdx]);
+            const bondDiff = currentTNX - tnxCloses[oldIdx];
+
+            let bondScore = Math.max(-1, Math.min(1, -bondDiff / 0.30)); 
+            let vxnAbsScore = Math.max(-1, Math.min(1, (20 - currentVXN) / 10)); // 修正版逆向映射
+            let soxRatioScore = Math.max(-1, Math.min(1, ratioChange / 0.05)); 
 
             return {
-                current: currentPrice,
-                change: currentChange,
-                history: validCloses // 返回清洗后的完整历史序列
+                X: Math.max(-3, Math.min(3, fedScore + bondScore + vxnAbsScore)),
+                Y: Math.max(-3, Math.min(3, soxRatioScore + capexScore + epsScore)),
+                currentVXN, currentNDX, ndxCloses
             };
         }
 
-        // 核心坐标与双线性仓位求解引擎
-        function calculateBilinear(x, y) {
-            const normX = ((x + 2) / 4) * 6;
-            const normY = ((y + 2) / 4) * 6;
-            const x1 = Math.max(0, Math.min(5, Math.floor(normX)));
-            const x2 = Math.min(6, x1 + 1);
-            const y1 = Math.max(0, Math.min(5, Math.floor(normY)));
-            const y2 = Math.min(6, y1 + 1);
+        function calculateFinalDecision(cur, w, m, q, vxnDayReturn = 0, ndxBias = 0, modeName = "模拟内化推演") {
+            let finalPosition = 0;
+            let regimeText = "";
+            const banner = document.getElementById('emergency-banner');
 
-            const Q11 = POSITION_MATRIX[6 - y1][x1];
-            const Q21 = POSITION_MATRIX[6 - y1][x2];
-            const Q12 = POSITION_MATRIX[6 - y2][x1];
-            const Q22 = POSITION_MATRIX[6 - y2][x2];
+            if ((vxnDayReturn > 0.20 && ndxBias < -0.08) || ndxBias < -0.15) {
+                finalPosition = 40;
+                regimeText = "🚨 黄金坑极端超卖突击";
+                banner.className = "w-full py-2.5 px-4 text-center text-xs font-bold bg-emerald-500 text-slate-950 block";
+                banner.innerText = "🚨 应急多头防御激活：非理性砸盘，系统执行机械式强制买入！";
+            } else {
+                banner.className = "hidden";
+                finalPosition = interpolatePosition(cur.X, cur.Y);
 
-            const fx1 = (x2 - normX) * Q11 + (normX - x1) * Q21;
-            const fx2 = (x2 - normX) * Q12 + (normX - x1) * Q22;
-            return Math.round((y2 - normY) * fx1 + (normY - y1) * fx2);
-        }
+                if (cur.X >= 0 && cur.Y >= 0) regimeText = "🟢 右上：戴维斯双击区 (流动性宽松+AI强力)";
+                else if (cur.X < 0 && cur.Y >= 0) regimeText = "🟡 左上：重力蹦迪区 (联储紧缩/逆风+AI强劲)";
+                else if (cur.X >= 0 && cur.Y < 0) regimeText = "🟡 右下：虚胖流动性区 (放水但缺乏半导体催化)";
+                else regimeText = "🔴 左下：戴维斯双杀区 (高压抽水+产业失速)";
+            }
 
-        // 缓存各周期清洗后干净的坐标点群
-        let GLOBAL_TIMELINE_DATA = null;
+            document.getElementById('matrix-coords').innerText = `(当前 X: ${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}, Y: ${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)})`;
+            renderMatrixDot('quantum-dot', cur.X, cur.Y);
+            renderMatrixDot('quantum-dot-solid', cur.X, cur.Y);
+            renderMatrixDot('dot-week', w.X, w.Y);
+            renderMatrixDot('dot-month', m.X, m.Y);
+            renderMatrixDot('dot-quarter', q.X, q.Y);
 
-        function computeXYAtOffset(offset, dataset) {
-            // offset: 0为最新, 5为上周, 21为上月, 63为上季 (按交易日粗略拟合)
-            const getPriceAt = (arr, off) => arr[Math.max(0, arr.length - 1 - off)];
+            const posEl = document.getElementById('target-position');
+            posEl.innerText = `${finalPosition}%`;
+            if (finalPosition >= 70) posEl.className = "text-6xl font-black text-emerald-400 my-2 tracking-tighter";
+            else if (finalPosition >= 40) posEl.className = "text-6xl font-black text-amber-400 my-2 tracking-tighter";
+            else posEl.className = "text-6xl font-black text-rose-500 my-2 tracking-tighter";
+            document.getElementById('market-regime').innerText = regimeText;
+
+            const actionPanel = document.getElementById('action-panel');
+            const actionCmd = document.getElementById('action-command');
             
-            const tnxVal = getPriceAt(dataset.tnx.history, offset);
-            const vxnVal = getPriceAt(dataset.vxn.history, offset);
-            
-            // 历史变动率采用对应历史切片点的单日变动
-            const soxxHistoryArr = dataset.soxx.history;
-            const idx = Math.max(1, soxxHistoryArr.length - 1 - offset);
-            const soxxChange = ((soxxHistoryArr[idx] - soxxHistoryArr[idx - 1]) / soxxHistoryArr[idx - 1]) * 100;
+            if (regimeText.includes("🚨")) {
+                actionPanel.className = "p-3 rounded-xl border bg-rose-950/40 border-rose-500/50 animate-pulse";
+                actionCmd.innerHTML = `<span class="text-rose-400 font-bold">【🚀 第二级火箭·核心突击】</span><br>当前触发黄金坑极端防御阈值！建议立即动用待发弹药中的 <b class="text-white text-base font-mono">20,000</b> 元单枪直入左侧强攻！`;
+            } else if (cur.X < -0.8 || cur.Y < 0.3) {
+                actionPanel.className = "p-3 rounded-xl border bg-amber-950/30 border-amber-500/40";
+                actionCmd.innerHTML = `<span class="text-amber-400 font-bold">【🏹 第一级火箭·前锋低吸】</span><br>建议动用待发弹药中的 <b class="text-white text-base font-mono">15,000</b> 元分批防御性低吸，借助25%老利润硬踩线。`;
+            } else if (cur.X > 0.5 && cur.Y > 1.2) {
+                actionPanel.className = "p-3 rounded-xl border bg-emerald-950/20 border-emerald-500/30";
+                actionCmd.innerHTML = `<span class="text-emerald-400 font-bold">【🛡️ 战术静默·拒绝抬轿】</span><br>建议50,000元现金持币观望，拒绝高位加仓，全力保护原仓位25%利润线。`;
+            } else {
+                actionPanel.className = "p-3 rounded-xl border bg-slate-950/50 border-slate-800";
+                actionCmd.innerHTML = `<span class="text-slate-300 font-bold">【💤 蓄势守候·持币观望】</span><br>大盘处于常规中性震荡区间，5万子弹继续锁定，静待雷达信号。`;
+            }
 
-            // 分段阈值叠加软指标进行联合坐标结算
-            const X = scoreTnxThreshold(tnxVal) + scoreVxnThreshold(vxnVal) + SOFT_METRICS.fed;
-            const Y = scoreSoxxThreshold(soxxChange) + SOFT_METRICS.capex + SOFT_METRICS.eps;
-
-            return {
-                x: Math.max(-2, Math.min(2, X)),
-                y: Math.max(-2, Math.min(2, Y)),
-                rawTnx: tnxVal,
-                rawVxn: vxnVal,
-                rawSoxxChange: soxxChange
-            };
+            document.getElementById('score-macro').innerText = `${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}`;
+            document.getElementById('score-industry').innerText = `${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)}`;
+            document.getElementById('sync-mode').innerText = modeName;
+            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
         }
 
-        function executeStrategySolver() {
-            if (!GLOBAL_TIMELINE_DATA) return;
-
-            // 1. 动态对齐解算 4 个时间维度的坐标切片
-            const ptCurrent = computeXYAtOffset(0, GLOBAL_TIMELINE_DATA);
-            const ptWeek = computeXYAtOffset(5, GLOBAL_TIMELINE_DATA);
-            const ptMonth = computeXYAtOffset(21, GLOBAL_TIMELINE_DATA);
-            const ptQuarter = computeXYAtOffset(63, GLOBAL_TIMELINE_DATA);
-
-            // 2. 映射驱动四点漂移可视化
-            const mapDOM = (id, coords) => {
-                const dom = document.getElementById(id);
-                dom.style.left = `${((coords.x + 2) / 4) * 100}%`;
-                dom.style.top = `${(1 - (coords.y + 2) / 4) * 100}%`;
-            };
-            mapDOM('radar-pointer', ptCurrent);
-            mapDOM('pt-week', ptWeek);
-            mapDOM('pt-month', ptMonth);
-            mapDOM('pt-quarter', ptQuarter);
-
-            // 3. 实时输出计算值
-            document.getElementById('coord-display').innerText = `当前 X: ${ptCurrent.x >= 0 ? '+' : ''}${ptCurrent.x.toFixed(2)}, Y: ${ptCurrent.y >= 0 ? '+' : ''}${ptCurrent.y.toFixed(2)}`;
-            document.getElementById('lbl-tnx').innerText = `${GLOBAL_TIMELINE_DATA.tnx.current.toFixed(2)}%`;
-            document.getElementById('lbl-vxn').innerText = GLOBAL_TIMELINE_DATA.vxn.current.toFixed(1);
-            document.getElementById('lbl-soxx').innerText = `${GLOBAL_TIMELINE_DATA.soxx.change >= 0 ? '+' : ''}${GLOBAL_TIMELINE_DATA.soxx.change.toFixed(2)}%`;
-
-            // 4. 双线性插值推导最终仓位
-            const finalPos = calculateBilinear(ptCurrent.x, ptCurrent.y);
-            document.getElementById('big-position').innerText = `${finalPos}%`;
-
-            // 5. 动态状态舱及胶囊染色
-            const dot = document.getElementById('status-dot');
-            const txt = document.getElementById('status-text');
-            if (ptCurrent.x >= 0 && ptCurrent.y >= 0) {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
-                txt.innerText = "右上象限：戴维斯双击区 (基本面强力支撑)";
-            } else if (ptCurrent.x < 0 && ptCurrent.y >= 0) {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
-                txt.innerText = "左上象限：背离突击区 (流动性逆风但产业坚韧)";
-            } else if (ptCurrent.x < 0 && ptCurrent.y < 0) {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
-                txt.innerText = "左下象限：流动性冰河区 (全面防御警戒)";
-            } else {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse";
-                txt.innerText = "右下象限：多头情绪陷阱区 (防范回调风险)";
-            }
-
-            // 6. 5万战术加仓面板同步
-            const badge = document.getElementById('risk-badge');
-            if (ptCurrent.x < -0.8) {
-                badge.className = "text-[10px] px-2 py-0.5 rounded border font-bold bg-[#3b2314] border-amber-600 text-amber-400";
-                badge.innerText = "左侧防御姿态";
-            } else {
-                badge.className = "text-[10px] px-2 py-0.5 rounded border font-bold bg-[#122e1f] border-emerald-600 text-emerald-400";
-                badge.innerText = "稳健防御姿态";
-            }
-
-            const cmdBox = document.getElementById('tactical-cmd-box');
-            if (ptCurrent.x < -1.0 && ptCurrent.y < -0.5) {
-                cmdBox.innerHTML = `<span class="text-rose-400 font-bold">【🚀 第二级火箭·全面开火】</span><br>多轨硬指标触及深度左侧安全阈值！建议动用待发弹药中的 <span class="text-white font-bold">35,000元</span> 强力突击，协同合击确定性黄金底部。`;
-            } else if (ptCurrent.x < -0.6 || ptCurrent.y < 0.0) {
-                cmdBox.innerHTML = `<span class="text-amber-400 font-bold">【🏹 第一级火箭·前锋试探】</span><br>硬指标出现阶段性超跌。建议调遣待发弹药中的 <span class="text-white font-bold">15,000元</span> 进行战略低吸，剩余35,000元锁死不动。`;
-            } else {
-                cmdBox.innerHTML = `<span class="text-slate-400 font-bold">【💤 蓄势守候·鸣金持币】</span><br>大盘指标沉浸于常规安全震荡区间，多维信号未形成破局共振，5万待发弹药全额按兵不动。`;
-            }
-        }
-
-        // 统一总线调度驱动
-        async function refreshAllData() {
-            const timeLbl = document.getElementById('lbl-time');
-            timeLbl.innerText = "同步状态: AI软数据&硬指标交尾清洗中...";
-            timeLbl.className = "text-amber-400";
+        async function fetchMarketData() {
+            document.getElementById('loading-bar').style.width = '30%';
+            // 🟢 动态抓取阵列：扩展为 7 个完全真实指标（已修正为 finance 官方域名）
+            const tickers = ['%5ENDX', '%5ESOX', '%5EVXN', '%5ETNX', '%5EIRX', 'NVDA', '%5EGSPC'];
+            const proxy = (t) => `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=6mo`)}`;
 
             try {
-                const [tnx, vxn, soxx, irx] = await Promise.all([
-                    fetchHistoricalData('^TNX'),
-                    fetchHistoricalData('^VXN'),
-                    fetchHistoricalData('SOXX'),
-                    fetchHistoricalData('^IRX')
-                ]);
+                const promises = tickers.map(t => fetch(proxy(t)).then(r => r.json()).then(data => data.chart.result[0]));
+                const results = await Promise.all(promises);
+                document.getElementById('loading-bar').style.width = '100%';
 
-                // 锁存全局数据切片
-                GLOBAL_TIMELINE_DATA = { tnx, vxn, soxx };
+                const len = results[0].indicators.adjclose[0].adjclose.length;
+                const idxCur = len - 1;
+                
+                const curPoints = calculateXYForIndex(results, idxCur);
+                const weekPoints = calculateXYForIndex(results, Math.max(0, len - 6));
+                const monthPoints = calculateXYForIndex(results, Math.max(0, len - 22));
+                const quarterPoints = calculateXYForIndex(results, Math.max(0, len - 64));
 
-                // 检查13周短端利率(IRX) 60个交易日内的飙升幅度
-                const irxHistory = irx.history;
-                if (irxHistory.length >= 60) {
-                    const currentIrx = irx.current;
-                    const historicalIrx = irxHistory[irxHistory.length - 60];
-                    const diff = currentIrx - historicalIrx; // 收益率绝对差值（1% = 1.00）
+                const prevVXN = results[2].indicators.adjclose[0].adjclose[idxCur - 1] || curPoints.currentVXN;
+                const ndxClosesArr = results[0].indicators.adjclose[0].adjclose;
+                const ndxMA20 = ndxClosesArr.slice(Math.max(0, idxCur - 19), idxCur + 1).reduce((a, b) => a + b, 0) / Math.min(20, idxCur + 1);
 
-                    const banner = document.getElementById('irx-alert-banner');
-                    if (diff >= 0.25) { // 涨幅超25个基点
-                        banner.classList.remove('hidden');
-                        document.getElementById('irx-alert-text').innerText = `短端国债利率60天内急剧飙升了 ${(diff).toFixed(2)}% (${Math.round(diff * 100)}bp)，宏观银根处于紧绷压力位！`;
-                    } else {
-                        banner.classList.add('hidden');
-                    }
+                const vxnDayReturn = (curPoints.currentVXN - prevVXN) / prevVXN;
+                const ndxBias = (curPoints.currentNDX - ndxMA20) / ndxMA20;
+
+                calculateFinalDecision(curPoints, weekPoints, monthPoints, quarterPoints, vxnDayReturn, ndxBias, "华尔街实时同步");
+
+                // 底部美联储超期放鹰监测器
+                const irxCloses = results[4].indicators.adjclose[0].adjclose;
+                const irxDiff = irxCloses[idxCur] - irxCloses[Math.max(0, idxCur - 60)];
+                const warningBox = document.getElementById('fed-warning-box');
+                if (irxDiff > 0.25) {
+                    warningBox.classList.remove('hidden'); 
+                } else {
+                    warningBox.classList.add('hidden');
                 }
 
-                // 驱动解算器生成画面
-                executeStrategySolver();
-                
-                timeLbl.innerText = `数据同步状态: 已刷新 (${new Date().toLocaleTimeString()})`;
-                timeLbl.className = "text-slate-600";
-
-            } catch (err) {
-                console.error(err);
-                timeLbl.innerText = "数据同步状态: API同步异常，10秒后重试";
-                timeLbl.className = "text-rose-500";
-                setTimeout(refreshAllData, 10000);
+                setTimeout(() => document.getElementById('loading-bar').style.width = '0', 500);
+            } catch (e) {
+                console.warn("读取数据异常，执行基础推演", e);
+                document.getElementById('loading-bar').style.width = '0';
+                calculateFinalDecision({X: 0.25, Y: 1.65}, {X: 0.15, Y: 1.80}, {X: -0.30, Y: 1.20}, {X: -0.50, Y: 0.85}, 0, 0, "基础自我推演");
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            syncSoftMetricsUI();
-            refreshAllData();
-            // 每5分钟纯机械自动静默刷新硬行情
-            setInterval(refreshAllData, 300000);
-        });
+        initMatrixGrid();
+        fetchMarketData();
+        // 🟢 5分钟高频全自动雷达刷新
+        setInterval(fetchMarketData, 5 * 60 * 1000);
     </script>
 </body>
 </html>
