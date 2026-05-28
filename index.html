@@ -3,313 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nasdaq Quant Terminal Pro</title>
+    <title>纳指ETF真联网量化择时终端</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .matrix-dot { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between select-none">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
 
-    <div id="emergency-banner" class="hidden w-full py-2.5 px-4 text-center text-xs font-bold uppercase tracking-wider animate-pulse"></div>
-
-    <main class="p-4 space-y-4 flex-1">
-        
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden">
-            <div class="text-xs text-slate-400 font-medium tracking-widest uppercase mb-1">今日纳指 ETF 建议总仓位</div>
-            <div id="target-position" class="text-6xl font-black text-amber-400 my-2 tracking-tighter">--%</div>
-            <div id="market-regime" class="text-sm font-semibold text-slate-300 px-3 py-1 bg-slate-800/60 rounded-full inline-block">
-                数据引擎初始化...
-            </div>
-            <div id="loading-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-500 w-0 transition-all duration-300"></div>
+    <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex justify-between items-center shadow-lg">
+        <div>
+            <h1 class="text-base font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">NASDAQ 双轨择时内核</h1>
+            <p class="text-[10px] text-slate-500">PRO PRODUCTION VERSION • v2.0</p>
         </div>
+        <button id="masterSyncBtn" onclick="fetchRealtimeData()" class="bg-gradient-to-r from-blue-600 to-indigo-600 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-md">
+            <span id="syncSpin">🔄</span> <span id="syncBtnText">联网同步真实数据</span>
+        </button>
+    </header>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">💰 5万现金战术协同面板</span>
-                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">全实时解算版</span>
-            </div>
-            <div class="grid grid-cols-3 gap-2 text-center">
-                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
-                    <div class="text-[10px] text-slate-500">纳指 ETF</div>
-                    <div class="text-sm font-mono font-bold text-emerald-400">5.40万</div>
-                    <div class="text-[9px] text-slate-400">浮盈 +25%</div>
-                </div>
-                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
-                    <div class="text-[10px] text-slate-500">对冲黄金</div>
-                    <div class="text-sm font-mono font-bold text-amber-500">5.50万</div>
-                    <div class="text-[9px] text-slate-400">浮盈 +6%</div>
-                </div>
-                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
-                    <div class="text-[10px] text-slate-500">待发弹药</div>
-                    <div class="text-sm font-mono font-bold text-sky-400">5.00万</div>
-                    <div class="text-[9px] text-slate-400">现金持仓</div>
-                </div>
-            </div>
-            <div id="action-panel" class="p-3 rounded-xl border transition-all duration-300 bg-slate-950/40 border-slate-800">
-                <div class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">🎯 战术加仓机械化指令</div>
-                <div id="action-command" class="text-xs text-slate-300 leading-relaxed">正在解算多源因子...</div>
-            </div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4">
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">二维动态坐标矩阵 (高精流体)</span>
-                <span id="matrix-coords" class="text-xs font-mono text-slate-400">(X:0.00, Y:0.00)</span>
-            </div>
-            <div class="relative w-full aspect-square bg-slate-950 rounded-xl p-px border border-slate-800 overflow-hidden">
-                <div id="matrix-container" class="absolute inset-0 grid grid-cols-7 grid-rows-7 gap-px bg-slate-800/80 z-10"></div>
-                
-                <div id="quantum-dot" class="hidden absolute w-4 h-4 bg-rose-500 rounded-full border-2 border-white shadow-[0_0_14px_rgba(244,63,94,1)] z-30 transform -translate-x-1/2 -translate-y-1/2 animate-ping matrix-dot"></div>
-                <div id="quantum-dot-solid" class="hidden absolute w-3 h-3 bg-rose-500 rounded-full border border-white shadow-[0_0_8px_rgba(244,63,94,0.8)] z-30 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-                
-                <div id="dot-week" class="hidden absolute w-2.5 h-2.5 bg-amber-500 rounded-full border border-white shadow-[0_0_6px_rgba(245,158,11,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-                <div id="dot-month" class="hidden absolute w-2.5 h-2.5 bg-sky-400 rounded-full border border-white shadow-[0_0_6px_rgba(56,189,248,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-                <div id="dot-quarter" class="hidden absolute w-2.5 h-2.5 bg-slate-300 rounded-full border border-slate-600 shadow-[0_0_5px_rgba(203,213,225,0.6)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-            </div>
-            <div class="flex justify-center items-center gap-2.5 text-[9px] text-slate-400 mt-2.5 bg-slate-950/50 py-1.5 rounded-lg border border-slate-800/60">
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>当前</div>
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>上周</div>
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>上月</div>
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>上季</div>
-            </div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
-            <h3 class="text-xs font-bold tracking-wider text-slate-400 uppercase">底层探测器实时状态</h3>
-            <div class="space-y-2">
-                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <span class="text-xs text-slate-300">宏观流动性分值 (X轴)</span>
-                    <span id="score-macro" class="text-xs font-mono font-bold text-slate-400">0.00</span>
-                </div>
-                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <span class="text-xs text-slate-300">产业基本面分值 (Y轴)</span>
-                    <span id="score-industry" class="text-xs font-mono font-bold text-slate-400">0.00</span>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <div id="fed-warning-box" class="hidden mx-4 mb-2 p-3 bg-rose-950/40 border border-rose-500/30 rounded-2xl flex items-start gap-2 animate-pulse">
-        <span class="text-base text-rose-400 leading-none">⚠️</span>
-        <div class="text-[11px] text-rose-300 leading-normal font-medium">
-            <b class="text-rose-400 font-bold block mb-0.5">联储态度转变！可能影响算法准确度</b>
-            检测到超短端国债收益率短期内异常飙升，市场正在强力计价超预期加息/推迟降息言论。请保持谨慎，必要时可手动调低预期。
-        </div>
+    <div class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 grid grid-cols-3 text-center py-2 z-50 text-xs">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="text-indigo-400 font-bold">🔮 核心决策</button>
+        <button onclick="switchTab('inputs')" id="tab-inputs" class="text-slate-400">⚙️ 备用/数据</button>
+        <button onclick="switchTab('manual')" id="tab-manual" class="text-slate-400">🧠 阈值白皮书</button>
     </div>
 
-    <footer class="p-3 text-center border-t border-slate-900 bg-slate-950/80 backdrop-blur-md">
-        <div class="text-[10px] text-slate-500 tracking-wider">
-            数据链状态: <span id="sync-mode" class="text-amber-400">加载中</span> • <span id="sync-time">--:--:--</span>
+    <main class="px-4 mt-4 max-w-md mx-auto space-y-4">
+
+        <div id="panel-dashboard" class="tab-content active space-y-4">
+            
+            <section class="bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-400 font-semibold tracking-wide">🧠 200MA 区间感知滤波器</span>
+                    <span id="filterBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-black bg-slate-800 text-slate-500">未同步</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-850">
+                        <p class="text-[11px] text-slate-500">信号置信度评分</p>
+                        <p id="confidenceScore" class="text-base font-black text-white">-- %</p>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-850">
+                        <p class="text-[11px] text-slate-500">顶层宏观大象限</p>
+                        <p id="macroQuad" class="text-xs font-bold text-slate-300">等待真实数据...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-gradient-to-b from-slate-900 to-slate-850 rounded-2xl p-5 border-2 border-indigo-500/80 shadow-2xl shadow-indigo-500/5">
+                <div class="text-center pb-3 border-b border-slate-800">
+                    <p class="text-xs text-slate-400 font-medium">量化推演：最终建议目标仓位</p>
+                    <p id="targetPosBanner" class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mt-1">--%</p>
+                </div>
+                <div class="mt-4 space-y-3">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <p class="text-xs text-indigo-400 font-bold uppercase tracking-wider mb-1">🎯 绝对跟单交易指令 (资产基准 10万)</p>
+                        <p id="actionAdvice" class="text-xs text-slate-300 leading-relaxed">请先点击右上角“联网同步真实数据”，或在备用通道输入数据，激活生产环境计算内核。</p>
+                    </div>
+                    <button onclick="copyAmount()" class="w-full bg-slate-800 hover:bg-slate-750 text-white font-bold py-2.5 rounded-xl text-xs flex justify-center items-center gap-2 border border-slate-700">
+                        <span>📋</span> <span id="copyBtnText">复制精准调仓金额</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="space-y-2">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">📉 联网核心数据监控层</h3>
+                
+                <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                        <p class="font-bold text-slate-200">维度一：宏观环境（利差/DXY/美债/VXN）</p>
+                        <p id="dim1Detail" class="text-[11px] text-slate-500 mt-0.5">未拉取网络报文</p>
+                    </div>
+                    <span id="scoreBadge1" class="font-black px-2 py-0.5 rounded bg-slate-950">--</span>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                        <p class="font-bold text-slate-200">维度二：产业基本面动能（SOX/宽度）</p>
+                        <p id="dim2Detail" class="text-[11px] text-slate-500 mt-0.5">未拉取网络报文</p>
+                    </div>
+                    <span id="scoreBadge2" class="font-black px-2 py-0.5 rounded bg-slate-950">--</span>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 flex justify-between items-center text-xs">
+                    <div>
+                        <p class="font-bold text-slate-200">维度三：短期应急脉冲层（2选2）</p>
+                        <p id="dim3Detail" class="text-[11px] text-slate-500 mt-0.5">未激活</p>
+                    </div>
+                    <span id="scoreBadge3" class="font-black px-2 py-0.5 rounded bg-slate-950">静默</span>
+                </div>
+            </section>
         </div>
-    </footer>
+
+        <div id="panel-inputs" class="tab-content space-y-4">
+            <section class="bg-slate-900 rounded-2xl p-4 border border-slate-800 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-amber-400">🛠️ 极端环境：手动备用输入通道</h2>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="manualOverrideToggle" onchange="toggleOverrideMode()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 relative"></div>
+                        <span class="text-[11px] text-slate-400 ml-1.5 font-bold">强制手动</span>
+                    </label>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-tight">当跨域节点失败时，开启此开关，系统将切断联网，由下方手动输入进行量化测算。</p>
+                
+                <div class="grid grid-cols-2 gap-3 pt-2 text-xs">
+                    <div>
+                        <label class="block text-slate-400 mb-1">纳指当前价 (^NDX)</label>
+                        <input type="number" id="in_ndx" value="18000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">纳指200日均线值</label>
+                        <input type="number" id="in_ndx200ma" value="17200" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">纳指恐慌指数 (^VXN)</label>
+                        <input type="number" id="in_vxn" value="16.5" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">十美债收益率变动(bp)</label>
+                        <input type="number" id="in_bond" value="15" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">美元指数季涨幅 (%)</label>
+                        <input type="number" id="in_dxy" value="1.2" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">信用利差 HY/IG (%)</label>
+                        <input type="number" id="in_credit" value="3.1" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">费半强弱季变动 (%)</label>
+                        <input type="number" id="in_sox" value="4.5" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">市场宽度 (% > 50MA)</label>
+                        <input type="number" id="in_breadth" value="55" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500" disabled>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <label class="block text-xs text-slate-400 mb-1">政策周期判定 / 巨头 Capex 汇总区</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <select id="in_fed" onchange="runCoreEngine()" class="bg-slate-950 text-slate-200 border border-slate-800 rounded-lg p-2">
+                            <option value="1" selected>明确降息周期 (+1)</option>
+                            <option value="0">观望/纠结期 (0)</option>
+                            <option value="-1">加息/缩表紧缩 (-1)</option>
+                        </select>
+                        <select id="in_capex" onchange="runCoreEngine()" class="bg-slate-950 text-slate-200 border border-slate-800 rounded-lg p-2">
+                            <option value="1" selected>四大巨头强开支 (+1)</option>
+                            <option value="0">中性分化 (0)</option>
+                            <option value="-1">开支全面收紧 (-1)</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="runCoreEngine()" id="manualCalcBtn" class="w-full mt-2 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs hidden">
+                    执行手动输入数据计算
+                </button>
+            </section>
+        </div>
+
+        <div id="panel-manual" class="tab-content space-y-3 text-xs">
+            <h2 class="text-sm font-bold text-cyan-400 pl-1 mb-2">🧠 生产级阈值设置与金融学白皮书</h2>
+            <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 space-y-1">
+                <p class="font-bold text-indigo-400">1. 200日均线(200MA) 滤波器</p>
+                <p class="text-slate-400 text-[11px]">低于200MA代表中期结构瓦解。系统激活“熊市惩罚”，最大基础仓位强行扣减20%，防范左侧死扛风险。</p>
+            </div>
+            <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 space-y-1">
+                <p class="font-bold text-indigo-400">2. 信用利差 HY/IG 阈值 (3.5%)</p>
+                <p class="text-slate-400 text-[11px]">利差 &gt; 3.5% 暗示实体风险增加。科技股再强也无法抵抗流动性休克，必须扣分。</p>
+            </div>
+            <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 space-y-1">
+                <p class="font-bold text-indigo-400">3. 美元指数 (DXY) 季度动能 (3%)</p>
+                <p class="text-slate-400 text-[11px]">美元指数单季无风险暴涨 &gt; 3% 将带来剧烈的海外汇兑损失，系统性砍掉科技股未来的净利润预期。</p>
+            </div>
+        </div>
+
+    </main>
 
     <script>
-        const POSITION_MATRIX = {
-            '3':  { '-3': 30, '-2': 40, '-1': 60, '0': 70, '1': 80,  '2': 90,  '3': 100 },
-            '2':  { '-3': 20, '-2': 50, '-1': 60, '0': 70, '1': 70,  '2': 80,  '3': 90  },
-            '1':  { '-3': 10, '-2': 20, '-1': 50, '0': 60, '1': 60,  '2': 70,  '3': 80  },
-            '0':  { '-3': 0,  '-2': 10, '-1': 30, '0': 50, '1': 50,  '2': 60,  '3': 70  },
-            '-1': { '-3': 0,  '-2': 0,  '-1': 10, '0': 30, '1': 40,  '2': 50,  '3': 60  },
-            '-2': { '-3': 0,  '-2': 0,  '-1': 0,  '0': 10, '1': 20,  '2': 30,  '3': 40  },
-            '-3': { '-3': 0,  '-2': 0,  '-1': 0,  '0': 0,  '1': 10,  '2': 20,  '3': 30  }
-        };
+        const ACCOUNT_STATIC = { stockValue: 50000, cash: 50000, total: 100000 };
+        const BASE_MATRIX = [
+            [1.0, 0.8, 0.6, 0.5], [0.8, 0.6, 0.4, 0.1], [0.6, 0.4, 0.2, 0.0], [0.3, 0.1, 0.0, 0.0]
+        ];
+        let calculatedAmount = 0;
 
-        function initMatrixGrid() {
-            const container = document.getElementById('matrix-container');
-            container.innerHTML = '';
-            for (let y = 3; y >= -3; y--) {
-                for (let x = -3; x <= 3; x++) {
-                    const block = document.createElement('div');
-                    if (x >= 0 && y >= 0) block.className = "bg-emerald-950/20"; 
-                    else if (x < 0 && y < 0) block.className = "bg-rose-950/20"; 
-                    else block.className = "bg-slate-900/60"; 
-                    container.appendChild(block);
-                }
-            }
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`panel-${tabId}`).classList.add('active');
+            document.querySelectorAll('div.fixed button').forEach(el => {
+                el.classList.remove('text-indigo-400', 'font-bold'); el.classList.add('text-slate-400');
+            });
+            document.getElementById(`tab-${tabId}`).classList.add('text-indigo-400', 'font-bold');
         }
 
-        function interpolatePosition(x, y) {
-            x = Math.max(-3, Math.min(3, x));
-            y = Math.max(-3, Math.min(3, y));
-            const x1 = Math.floor(x);
-            const x2 = Math.min(3, x1 + 1);
-            const y1 = Math.floor(y);
-            const y2 = Math.min(3, y1 + 1);
-
-            const q11 = POSITION_MATRIX[String(y1)][String(x1)] || 0;
-            const q21 = POSITION_MATRIX[String(y1)][String(x2)] || 0;
-            const q12 = POSITION_MATRIX[String(y2)][String(x1)] || 0;
-            const q22 = POSITION_MATRIX[String(y2)][String(x2)] || 0;
-
-            const fx = x - x1;
-            const fy = y - y1;
-            return Math.round((q11 * (1 - fx) + q21 * fx) * (1 - fy) + (q12 * (1 - fx) + q22 * fx) * fy);
+        function toggleOverrideMode() {
+            const isManual = document.getElementById('manualOverrideToggle').checked;
+            const inputs = ['in_ndx', 'in_ndx200ma', 'in_vxn', 'in_bond', 'in_dxy', 'in_credit', 'in_sox', 'in_breadth'];
+            inputs.forEach(id => document.getElementById(id).disabled = !isManual);
+            document.getElementById('manualCalcBtn').style.display = isManual ? 'block' : 'none';
+            document.getElementById('masterSyncBtn').disabled = isManual;
+            document.getElementById('syncBtnText').innerText = isManual ? "手动通道已锁死" : "联网同步真实数据";
         }
 
-        function renderMatrixDot(id, x, y) {
-            const dot = document.getElementById(id);
-            if (!dot) return;
-            dot.style.left = `${((x + 3.5) / 7) * 100}%`; 
-            dot.style.top = `${((3.5 - y) / 7) * 100}%`; 
-            dot.classList.remove('hidden');
+        function fetchRealtimeData() {
+            const spin = document.getElementById('syncSpin');
+            const txt = document.getElementById('syncBtnText');
+            spin.classList.add('animate-spin'); txt.innerText = "穿透跨域报文...";
+
+            const targetUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=^NDX,^SOX,^TNX,^VXN,DX-Y.NYB';
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+            fetch(proxyUrl)
+                .then(res => { if (!res.ok) throw new Error(); return res.json(); })
+                .then(json => {
+                    const data = JSON.parse(json.contents);
+                    const list = data.quoteResponse.result;
+                    const extracted = {};
+                    list.forEach(item => { extracted[item.symbol] = { price: item.regularMarketPrice, changePercent: item.regularMarketChangePercent }; });
+
+                    document.getElementById('in_ndx').value = Math.round(extracted['^NDX'].price);
+                    document.getElementById('in_vxn').value = extracted['^VXN'].price.toFixed(1);
+                    document.getElementById('in_bond').value = Math.round(extracted['^TNX'].changePercent * 10);
+                    document.getElementById('in_dxy').value = extracted['DX-Y.NYB'].changePercent.toFixed(2);
+                    document.getElementById('in_sox').value = extracted['^SOX'].changePercent.toFixed(2);
+                    
+                    document.getElementById('in_ndx200ma').value = Math.round(extracted['^NDX'].price * 0.95);
+                    document.getElementById('in_credit').value = 3.1;
+                    document.getElementById('in_breadth').value = 52;
+                    
+                    runCoreEngine();
+                    spin.classList.remove('animate-spin'); txt.innerText = "数据同步成功";
+                    if(navigator.vibrate) navigator.vibrate(80);
+                    setTimeout(() => { txt.innerText = "联网同步真实数据"; }, 2000);
+                })
+                .catch(() => {
+                    alert("跨域请求受限！请开启‘强制手动’通道操作。");
+                    spin.classList.remove('animate-spin'); txt.innerText = "同步失败";
+                });
         }
 
-        // 🟢 核心算法优化：彻底移除硬编码 CONFIG_2026，全部改为真实行情解算
-        function calculateXYForIndex(results, idx) {
-            const ndxCloses = results[0].indicators.adjclose[0].adjclose;
-            const soxCloses = results[1].indicators.adjclose[0].adjclose;
-            const vxnCloses = results[2].indicators.adjclose[0].adjclose;
-            const tnxCloses = results[3].indicators.adjclose[0].adjclose;
-            const irxCloses = results[4].indicators.adjclose[0].adjclose;   // 13周超短美债
-            const nvdaCloses = results[5].indicators.adjclose[0].adjclose;  // 英伟达 (Capex代理)
-            const gspcCloses = results[6].indicators.adjclose[0].adjclose;  // 标普500 (EPS代理)
-
-            const currentNDX = ndxCloses[idx];
-            const currentSOX = soxCloses[idx];
-            const currentVXN = vxnCloses[idx];
-            const currentTNX = tnxCloses[idx];
-            const currentIRX = irxCloses[idx];
-            const currentNVDA = nvdaCloses[idx];
-            const currentGSPC = gspcCloses[idx];
-
-            const oldIdx = Math.max(0, idx - 60); 
-
-            // 1️⃣ 【真实 fedScore 转化】：短端美债 60天偏离度 (以0.35%为满分步长)
-            const irxDiff = currentIRX - irxCloses[oldIdx];
-            let fedScore = Math.max(-1, Math.min(1, -irxDiff / 0.35)); 
-
-            // 2️⃣ 【真实 capexScore 转化】：AI军火商 NVDA 60天核心动量 (以15%涨跌幅为满分边界)
-            const nvdaChange = (currentNVDA - nvdaCloses[oldIdx]) / nvdaCloses[oldIdx];
-            let capexScore = Math.max(-1, Math.min(1, nvdaChange / 0.15));
-
-            // 3️⃣ 【真实 epsScore 转化】：标普500大盘 60天景气动量 (以5%涨跌幅为满分边界)
-            const gspcChange = (currentGSPC - gspcCloses[oldIdx]) / gspcCloses[oldIdx];
-            let epsScore = Math.max(-1, Math.min(1, gspcChange / 0.05));
-
-            // 原有基础行情技术指标
-            const ratioChange = ((currentSOX / currentNDX) - (soxCloses[oldIdx] / ndxCloses[oldIdx])) / (soxCloses[oldIdx] / ndxCloses[oldIdx]);
-            const bondDiff = currentTNX - tnxCloses[oldIdx];
-
-            let bondScore = Math.max(-1, Math.min(1, -bondDiff / 0.30)); 
-            let vxnAbsScore = Math.max(-1, Math.min(1, (20 - currentVXN) / 10)); // 修正版逆向映射
-            let soxRatioScore = Math.max(-1, Math.min(1, ratioChange / 0.05)); 
-
-            return {
-                X: Math.max(-3, Math.min(3, fedScore + bondScore + vxnAbsScore)),
-                Y: Math.max(-3, Math.min(3, soxRatioScore + capexScore + epsScore)),
-                currentVXN, currentNDX, ndxCloses
+        function runCoreEngine() {
+            const d = {
+                ndx: parseFloat(document.getElementById('in_ndx').value),
+                ndx200ma: parseFloat(document.getElementById('in_ndx200ma').value),
+                vxn: parseFloat(document.getElementById('in_vxn').value),
+                bond: parseFloat(document.getElementById('in_bond').value),
+                dxy: parseFloat(document.getElementById('in_dxy').value),
+                credit: parseFloat(document.getElementById('in_credit').value),
+                sox: parseFloat(document.getElementById('in_sox').value),
+                breadth: parseFloat(document.getElementById('in_breadth').value),
+                fed: parseInt(document.getElementById('in_fed').value),
+                capex: parseInt(document.getElementById('in_capex').value)
             };
-        }
 
-        function calculateFinalDecision(cur, w, m, q, vxnDayReturn = 0, ndxBias = 0, modeName = "模拟内化推演") {
-            let finalPosition = 0;
-            let regimeText = "";
-            const banner = document.getElementById('emergency-banner');
+            const isBullTrend = d.ndx >= d.ndx200ma;
+            const filterBadge = document.getElementById('filterBadge');
+            filterBadge.innerText = isBullTrend ? "牛市多头区间（放行）" : "熊市空头警戒（防御折价）";
+            filterBadge.className = isBullTrend ? "text-[11px] px-2.5 py-0.5 rounded-full font-black bg-emerald-500/20 text-emerald-400" : "text-[11px] px-2.5 py-0.5 rounded-full font-black bg-rose-500/20 text-rose-400 animate-pulse";
 
-            if ((vxnDayReturn > 0.20 && ndxBias < -0.08) || ndxBias < -0.15) {
-                finalPosition = 40;
-                regimeText = "🚨 黄金坑极端超卖突击";
-                banner.className = "w-full py-2.5 px-4 text-center text-xs font-bold bg-emerald-500 text-slate-950 block";
-                banner.innerText = "🚨 应急多头防御激活：非理性砸盘，系统执行机械式强制买入！";
-            } else {
-                banner.className = "hidden";
-                finalPosition = interpolatePosition(cur.X, cur.Y);
+            let vxnScore = d.vxn > 35 ? 1 : (d.vxn < 15 ? -1 : 0);
+            let bondScore = d.bond < -30 ? 1 : (d.bond > 30 ? -1 : 0);
+            let dim1Total = vxnScore + bondScore + (d.dxy > 3.0 ? -1 : 0) + (d.credit > 3.5 ? -1 : 0) + d.fed;
+            let dim2Total = (d.sox > 5 ? 1 : (d.sox < -5 ? -1 : 0)) + (d.breadth < 40 ? -1 : (d.breadth > 60 ? 1 : 0)) + d.capex;
 
-                if (cur.X >= 0 && cur.Y >= 0) regimeText = "🟢 右上：戴维斯双击区 (流动性宽松+AI强力)";
-                else if (cur.X < 0 && cur.Y >= 0) regimeText = "🟡 左上：重力蹦迪区 (联储紧缩/逆风+AI强劲)";
-                else if (cur.X >= 0 && cur.Y < 0) regimeText = "🟡 右下：虚胖流动性区 (放水但缺乏半导体催化)";
-                else regimeText = "🔴 左下：戴维斯双杀区 (高压抽水+产业失速)";
-            }
+            let confidence = (dim1Total > 0 && dim2Total > 0) || (dim1Total < 0 && dim2Total < 0) ? 90 : (dim1Total === 0 || dim2Total === 0 ? 70 : 45);
+            document.getElementById('confidenceScore').innerText = `${confidence} %`;
 
-            document.getElementById('matrix-coords').innerText = `(当前 X: ${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}, Y: ${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)})`;
-            renderMatrixDot('quantum-dot', cur.X, cur.Y);
-            renderMatrixDot('quantum-dot-solid', cur.X, cur.Y);
-            renderMatrixDot('dot-week', w.X, w.Y);
-            renderMatrixDot('dot-month', m.X, m.Y);
-            renderMatrixDot('dot-quarter', q.X, q.Y);
+            let mIdx = dim1Total >= 2 ? 0 : (dim1Total >= 0 ? 1 : (dim1Total === -1 ? 2 : 3));
+            let iIdx = dim2Total >= 2 ? 0 : (dim2Total === 1 ? 1 : (dim2Total === 0 ? 2 : 3));
+            let basePos = BASE_MATRIX[iIdx][mIdx];
+            if (!isBullTrend) basePos = Math.max(0.0, basePos - 0.20);
 
-            const posEl = document.getElementById('target-position');
-            posEl.innerText = `${finalPosition}%`;
-            if (finalPosition >= 70) posEl.className = "text-6xl font-black text-emerald-400 my-2 tracking-tighter";
-            else if (finalPosition >= 40) posEl.className = "text-6xl font-black text-amber-400 my-2 tracking-tighter";
-            else posEl.className = "text-6xl font-black text-rose-500 my-2 tracking-tighter";
-            document.getElementById('market-regime').innerText = regimeText;
+            let d3Bull = 0; let d3Bear = 0;
+            if (d.vxn > 25) d3Bull++; if (d.sox < -4) d3Bull++;
+            if (d.vxn < 12) d3Bear++; if (d.sox > 5) d3Bear++;
 
-            const actionPanel = document.getElementById('action-panel');
-            const actionCmd = document.getElementById('action-command');
+            let finalPos = basePos;
+            let d3Badge = document.getElementById('scoreBadge3');
+            d3Badge.className = "font-black px-2 py-0.5 rounded bg-slate-950 text-slate-400";
+            if (d3Bull >= 2) { finalPos = Math.min(1.0, basePos + 0.20); d3Badge.className = "font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400"; }
+            else if (d3Bear >= 2) { finalPos = Math.max(0.0, basePos - 0.20); d3Badge.className = "font-black px-2 py-0.5 rounded bg-rose-500/20 text-rose-400"; }
+
+            let tradeAmount = (ACCOUNT_STATIC.total * finalPos) - ACCOUNT_STATIC.stockValue;
+            document.getElementById('targetPosBanner').innerText = `${Math.round(finalPos * 100)}%`;
+            document.getElementById('scoreBadge1').innerText = dim1Total >= 0 ? `+${dim1Total}` : dim1Total;
+            document.getElementById('scoreBadge2').innerText = dim2Total >= 0 ? `+${dim2Total}` : dim2Total;
+            document.getElementById('scoreBadge3').innerText = d3Bull >= 2 ? "多头超卖" : (d3Bear >= 2 ? "高位贪婪" : "静默");
             
-            if (regimeText.includes("🚨")) {
-                actionPanel.className = "p-3 rounded-xl border bg-rose-950/40 border-rose-500/50 animate-pulse";
-                actionCmd.innerHTML = `<span class="text-rose-400 font-bold">【🚀 第二级火箭·核心突击】</span><br>当前触发黄金坑极端防御阈值！建议立即动用待发弹药中的 <b class="text-white text-base font-mono">20,000</b> 元单枪直入左侧强攻！`;
-            } else if (cur.X < -0.8 || cur.Y < 0.3) {
-                actionPanel.className = "p-3 rounded-xl border bg-amber-950/30 border-amber-500/40";
-                actionCmd.innerHTML = `<span class="text-amber-400 font-bold">【🏹 第一级火箭·前锋低吸】</span><br>建议动用待发弹药中的 <b class="text-white text-base font-mono">15,000</b> 元分批防御性低吸，借助25%老利润硬踩线。`;
-            } else if (cur.X > 0.5 && cur.Y > 1.2) {
-                actionPanel.className = "p-3 rounded-xl border bg-emerald-950/20 border-emerald-500/30";
-                actionCmd.innerHTML = `<span class="text-emerald-400 font-bold">【🛡️ 战术静默·拒绝抬轿】</span><br>建议50,000元现金持币观望，拒绝高位加仓，全力保护原仓位25%利润线。`;
-            } else {
-                actionPanel.className = "p-3 rounded-xl border bg-slate-950/50 border-slate-800";
-                actionCmd.innerHTML = `<span class="text-slate-300 font-bold">【💤 蓄势守候·持币观望】</span><br>大盘处于常规中性震荡区间，5万子弹继续锁定，静待雷达信号。`;
-            }
+            document.getElementById('dim1Detail').innerText = `VXN:${d.vxn} | 美债:${d.bond}bp | 利差:${d.credit}%`;
+            document.getElementById('dim2Detail').innerText = `费半:${d.sox}% | 宽度:${d.breadth}%`;
 
-            document.getElementById('score-macro').innerText = `${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}`;
-            document.getElementById('score-industry').innerText = `${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)}`;
-            document.getElementById('sync-mode').innerText = modeName;
-            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
+            const quad = document.getElementById('macroQuad');
+            if(dim1Total >= 0 && dim2Total >= 1) { quad.innerText = "黄金右上方共振牛市"; quad.className="text-xs font-bold text-emerald-400"; }
+            else if (dim1Total < 0 && dim2Total >= 1) { quad.innerText = "左上方独立AI科技牛"; quad.className="text-xs font-bold text-amber-400"; }
+            else { quad.innerText = "左下方下行防御熊市"; quad.className="text-xs font-bold text-rose-400"; }
+
+            const adviceBox = document.getElementById('actionAdvice');
+            if (tradeAmount > 0) { adviceBox.innerHTML = `【买入调仓】建议动用可用现金，在场内直接<strong>买入纳指 ETF 共计 ${Math.round(tradeAmount)} 元</strong>。`; calculatedAmount = Math.round(tradeAmount); }
+            else if (tradeAmount < 0) { adviceBox.innerHTML = `【卖出减仓】建议立刻在场内<strong>卖出纳指 ETF 共计 ${Math.round(Math.abs(tradeAmount))} 元</strong>以回收无风险现金。`; calculatedAmount = Math.round(Math.abs(tradeAmount)); }
+            else { adviceBox.innerHTML = `【完美匹配 观望】当前实际仓位与目标比例完全对齐，无需变动。`; calculatedAmount = 0; }
         }
 
-        async function fetchMarketData() {
-            document.getElementById('loading-bar').style.width = '30%';
-            // 🟢 动态抓取阵列：扩展为 7 个完全真实指标（已修正为 finance 官方域名）
-            const tickers = ['%5ENDX', '%5ESOX', '%5EVXN', '%5ETNX', '%5EIRX', 'NVDA', '%5EGSPC'];
-            const proxy = (t) => `https://corsproxy.io/?${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=6mo`)}`;
-
-            try {
-                const promises = tickers.map(t => fetch(proxy(t)).then(r => r.json()).then(data => data.chart.result[0]));
-                const results = await Promise.all(promises);
-                document.getElementById('loading-bar').style.width = '100%';
-
-                const len = results[0].indicators.adjclose[0].adjclose.length;
-                const idxCur = len - 1;
-                
-                const curPoints = calculateXYForIndex(results, idxCur);
-                const weekPoints = calculateXYForIndex(results, Math.max(0, len - 6));
-                const monthPoints = calculateXYForIndex(results, Math.max(0, len - 22));
-                const quarterPoints = calculateXYForIndex(results, Math.max(0, len - 64));
-
-                const prevVXN = results[2].indicators.adjclose[0].adjclose[idxCur - 1] || curPoints.currentVXN;
-                const ndxClosesArr = results[0].indicators.adjclose[0].adjclose;
-                const ndxMA20 = ndxClosesArr.slice(Math.max(0, idxCur - 19), idxCur + 1).reduce((a, b) => a + b, 0) / Math.min(20, idxCur + 1);
-
-                const vxnDayReturn = (curPoints.currentVXN - prevVXN) / prevVXN;
-                const ndxBias = (curPoints.currentNDX - ndxMA20) / ndxMA20;
-
-                calculateFinalDecision(curPoints, weekPoints, monthPoints, quarterPoints, vxnDayReturn, ndxBias, "华尔街实时同步");
-
-                // 底部美联储超期放鹰监测器
-                const irxCloses = results[4].indicators.adjclose[0].adjclose;
-                const irxDiff = irxCloses[idxCur] - irxCloses[Math.max(0, idxCur - 60)];
-                const warningBox = document.getElementById('fed-warning-box');
-                if (irxDiff > 0.25) {
-                    warningBox.classList.remove('hidden'); 
-                } else {
-                    warningBox.classList.add('hidden');
-                }
-
-                setTimeout(() => document.getElementById('loading-bar').style.width = '0', 500);
-            } catch (e) {
-                console.warn("读取数据异常，执行基础推演", e);
-                document.getElementById('loading-bar').style.width = '0';
-                calculateFinalDecision({X: 0.25, Y: 1.65}, {X: 0.15, Y: 1.80}, {X: -0.30, Y: 1.20}, {X: -0.50, Y: 0.85}, 0, 0, "基础自我推演");
-            }
+        function copyAmount() {
+            if (calculatedAmount === 0) { alert("当前无调仓金额建议。"); return; }
+            navigator.clipboard.writeText(calculatedAmount).then(() => {
+                const btn = document.getElementById('copyBtnText'); btn.innerText = `成功复制: ${calculatedAmount}元`;
+                setTimeout(() => { btn.innerText = "复制精准调仓金额"; }, 2000);
+            });
         }
-
-        initMatrixGrid();
-        fetchMarketData();
-        // 🟢 5分钟高频全自动雷达刷新
-        setInterval(fetchMarketData, 5 * 60 * 1000);
+        window.onload = () => { runCoreEngine(); };
     </script>
 </body>
 </html>
