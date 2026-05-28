@@ -2,297 +2,183 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nasdaq Quant Terminal Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Macro Quant Matrix Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .matrix-dot { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .animate-pulse-slow { animation: pulse-slow 3s infinite; }
+        /* 隐藏滚动条但保留功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between select-none">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased no-scrollbar select-none">
 
-    <div id="emergency-banner" class="hidden w-full py-2.5 px-4 text-center text-xs font-bold uppercase tracking-wider animate-pulse"></div>
+    <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                <h1 class="text-lg font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+                    宏观流动性高精流体矩阵终端
+                </h1>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-mono text-slate-400">
+                <div>数据状态: <span id="sync-status" class="text-emerald-400">实时就绪</span></div>
+                <div class="border-l border-slate-700 h-3"></div>
+                <div>同步时间: <span id="sync-time" class="text-slate-200">--:--:--</span></div>
+            </div>
+        </div>
+    </header>
 
-    <main class="p-4 space-y-4 flex-1">
+    <main class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden">
-            <div class="text-xs text-slate-400 font-medium tracking-widest uppercase mb-1">今日纳指 ETF 建议总仓位</div>
-            <div id="target-position" class="text-6xl font-black text-amber-400 my-2 tracking-tighter">--%</div>
-            <div id="market-regime" class="text-sm font-semibold text-slate-300 px-3 py-1 bg-slate-800/60 rounded-full inline-block">
-                数据引擎初始化...
-            </div>
-            <div id="loading-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-500 w-0 transition-all duration-300"></div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">💰 5万现金战术协同面板</span>
-                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">标准稳健版</span>
-            </div>
-            <div class="grid grid-cols-3 gap-2 text-center">
-                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
-                    <div class="text-[10px] text-slate-500">纳指 ETF</div>
-                    <div class="text-sm font-mono font-bold text-emerald-400">5.40万</div>
-                    <div class="text-[9px] text-slate-400">浮盈 +25%</div>
-                </div>
-                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
-                    <div class="text-[10px] text-slate-500">对冲黄金</div>
-                    <div class="text-sm font-mono font-bold text-amber-500">5.50万</div>
-                    <div class="text-[9px] text-slate-400">浮盈 +6%</div>
-                </div>
-                <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40">
-                    <div class="text-[10px] text-slate-500">待发弹药</div>
-                    <div class="text-sm font-mono font-bold text-sky-400">5.00万</div>
-                    <div class="text-[9px] text-slate-400">现金持仓</div>
-                </div>
-            </div>
-            <div id="action-panel" class="p-3 rounded-xl border transition-all duration-300 bg-slate-950/40 border-slate-800">
-                <div class="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1">🎯 战术加仓机械化指令</div>
-                <div id="action-command" class="text-xs text-slate-300 leading-relaxed">正在解算多源因子...</div>
-            </div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4">
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">二维动态坐标矩阵 (高精流体)</span>
-                <span id="matrix-coords" class="text-xs font-mono text-slate-400">(X:0.00, Y:0.00)</span>
-            </div>
-            <div class="relative w-full aspect-square bg-slate-950 rounded-xl p-px border border-slate-800 overflow-hidden">
-                <div id="matrix-container" class="absolute inset-0 grid grid-cols-7 grid-rows-7 gap-px bg-slate-800/80 z-10"></div>
+        <div class="lg:col-span-2 flex flex-col gap-4">
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-3 text-[10px] font-mono text-slate-600">LR-MODEL V2.1</div>
+                <h2 class="text-sm font-semibold text-slate-400 mb-4 tracking-wide flex items-center gap-2">
+                    🎯 实时多维定位坐标雷达
+                </h2>
                 
-                <div id="quantum-dot" class="hidden absolute w-4 h-4 bg-rose-500 rounded-full border-2 border-white shadow-[0_0_14px_rgba(244,63,94,1)] z-30 transform -translate-x-1/2 -translate-y-1/2 animate-ping matrix-dot"></div>
-                <div id="quantum-dot-solid" class="hidden absolute w-3 h-3 bg-rose-500 rounded-full border border-white shadow-[0_0_8px_rgba(244,63,94,0.8)] z-30 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-                
-                <div id="dot-week" class="hidden absolute w-2.5 h-2.5 bg-amber-500 rounded-full border border-white shadow-[0_0_6px_rgba(245,158,11,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-                <div id="dot-month" class="hidden absolute w-2.5 h-2.5 bg-sky-400 rounded-full border border-white shadow-[0_0_6px_rgba(56,189,248,0.8)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-                <div id="dot-quarter" class="hidden absolute w-2.5 h-2.5 bg-slate-300 rounded-full border border-slate-600 shadow-[0_0_5px_rgba(203,213,225,0.6)] z-20 transform -translate-x-1/2 -translate-y-1/2 matrix-dot"></div>
-            </div>
-            <div class="flex justify-center items-center gap-2.5 text-[9px] text-slate-400 mt-2.5 bg-slate-950/50 py-1.5 rounded-lg border border-slate-800/60">
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>当前</div>
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>上周</div>
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>上月</div>
-                <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>上季</div>
+                <div class="relative w-full aspect-square max-w-[500px] mx-auto bg-slate-950 border-2 border-slate-800 rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
+                    <div class="absolute inset-0 border-b border-dashed border-slate-800/60 top-1/2"></div>
+                    <div class="absolute inset-0 border-l border-dashed border-slate-800/60 left-1/2"></div>
+                    
+                    <div class="absolute top-4 right-4 text-[11px] font-mono text-slate-700 text-right">右上：戴维斯双击区<br>（多头极乐）</div>
+                    <div class="absolute top-4 left-4 text-[11px] font-mono text-slate-700">左上：重力蹦迪区<br>（美债高压）</div>
+                    <div class="absolute bottom-4 left-4 text-[11px] font-mono text-slate-700">左下：流动性冰河期<br>（极度防守）</div>
+                    <div class="absolute bottom-4 right-4 text-[11px] font-mono text-slate-700 text-right">右下：情绪过载陷阱<br>（多头陷阱）</div>
+
+                    <div id="radar-pointer" class="absolute w-5 h-5 bg-gradient-to-br from-rose-400 to-red-600 rounded-full shadow-[0_0_20px_rgba(244,63,94,0.8)] border-2 border-white -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ease-out" style="left: 50%; top: 50%;">
+                        <div class="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-70"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-800/60 font-mono text-center">
+                    <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800/50">
+                        <div class="text-[10px] text-slate-500">X轴流动性重力 (美债/恐慌)</div>
+                        <div id="coord-x" class="text-base font-bold text-slate-200">0.00</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800/50">
+                        <div class="text-[10px] text-slate-500">Y轴产业动能 (半导体强度)</div>
+                        <div id="coord-y" class="text-base font-bold text-slate-200">0.00</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
-            <h3 class="text-xs font-bold tracking-wider text-slate-400 uppercase">底层探测器实时状态</h3>
-            <div class="space-y-2">
-                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <span class="text-xs text-slate-300">宏观流动性分值 (X轴)</span>
-                    <span id="score-macro" class="text-xs font-mono font-bold text-slate-400">0.00</span>
+        <div class="flex flex-col gap-6">
+            
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm flex flex-col gap-3">
+                <h2 class="text-sm font-semibold text-slate-400 tracking-wide">📊 底层指标全时观测</h2>
+                
+                <div class="flex justify-between items-center bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
+                    <div>
+                        <div class="text-xs font-bold text-slate-300">10年期美债收益率</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Ticker: ^TNX</div>
+                    </div>
+                    <div class="text-right font-mono">
+                        <div id="val-tnx" class="text-sm font-bold text-white">--%</div>
+                        <div id="chg-tnx" class="text-[10px]">--%</div>
+                    </div>
                 </div>
-                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40">
-                    <span class="text-xs text-slate-300">产业基本面分值 (Y轴)</span>
-                    <span id="score-industry" class="text-xs font-mono font-bold text-slate-400">0.00</span>
+
+                <div class="flex justify-between items-center bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
+                    <div>
+                        <div class="text-xs font-bold text-slate-300">纳指100隐含波动率</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Ticker: ^VXN</div>
+                    </div>
+                    <div class="text-right font-mono">
+                        <div id="val-vxn" class="text-sm font-bold text-white">--</div>
+                        <div id="chg-vxn" class="text-[10px]">--%</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
+                    <div>
+                        <div class="text-xs font-bold text-slate-300">SOXX 半导体指数</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Ticker: SOXX</div>
+                    </div>
+                    <div class="text-right font-mono">
+                        <div id="val-soxx" class="text-sm font-bold text-white">--</div>
+                        <div id="chg-soxx" class="text-[10px]">--%</div>
+                    </div>
                 </div>
             </div>
+
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm flex flex-col gap-4">
+                <h2 class="text-sm font-semibold text-slate-400 tracking-wide">⚔️ 实时战术调度命令</h2>
+                
+                <div id="action-panel" class="p-3 rounded-xl border bg-slate-950/60 border-slate-800">
+                    <p id="action-cmd" class="text-xs text-slate-400 leading-relaxed font-mono">
+                        正在穿透华尔街数据中心进行流体解算，请稍候...
+                    </p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60 flex flex-col gap-2 font-mono text-[11px]">
+                    <div class="text-slate-500 font-semibold mb-1">💼 战略沙盘预设锚点:</div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>🇺🇸 纳指 100 ETF 仓位:</span>
+                        <span class="text-emerald-400 font-bold">5.40 万 (浮盈 +25%)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>💛 国际黄金现货仓位:</span>
+                        <span class="text-emerald-500 font-bold">2.30 万 (浮盈 +6%)</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>🛡️ 战术现金待发弹药:</span>
+                        <span class="text-amber-400 font-bold">5.00 万 (随时待命)</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
-    <div id="fed-warning-box" class="hidden mx-4 mb-2 p-3 bg-rose-950/40 border border-rose-500/30 rounded-2xl flex items-start gap-2 animate-pulse">
-        <span class="text-base text-rose-400 leading-none">⚠️</span>
-        <div class="text-[11px] text-rose-300 leading-normal font-medium">
-            <b class="text-rose-400 font-bold block mb-0.5">联储态度转变！可能影响算法准确度</b>
-            检测到超短端国债收益率短期内异常飙升，市场正在强力计价超预期加息/推迟降息言论。当前核心算法 X 轴仍在使用静态硬编码，请谨慎参考建议仓位，必要时可手动调低预期。
-        </div>
-    </div>
-
-    <footer class="p-3 text-center border-t border-slate-900 bg-slate-950/80 backdrop-blur-md">
-        <div class="text-[10px] text-slate-500 tracking-wider">
-            数据链状态: <span id="sync-mode" class="text-amber-400">加载中</span> • <span id="sync-time">--:--:--</span>
-        </div>
-    </footer>
-
     <script>
-        // 🟢 fedScore 维持静态硬编码设定
-        const CONFIG_2026 = { fedScore: 0.0, capexScore: 1.0, epsScore: 1.0 };
-        
-        const POSITION_MATRIX = {
-            '3':  { '-3': 30, '-2': 40, '-1': 60, '0': 70, '1': 80,  '2': 90,  '3': 100 },
-            '2':  { '-3': 20, '-2': 50, '-1': 60, '0': 70, '1': 70,  '2': 80,  '3': 90  },
-            '1':  { '-3': 10, '-2': 20, '-1': 50, '0': 60, '1': 60,  '2': 70,  '3': 80  },
-            '0':  { '-3': 0,  '-2': 10, '-1': 30, '0': 50, '1': 50,  '2': 60,  '3': 70  },
-            '-1': { '-3': 0,  '-2': 0,  '-1': 10, '0': 30, '1': 40,  '2': 50,  '3': 60  },
-            '-2': { '-3': 0,  '-2': 0,  '-1': 0,  '0': 10, '1': 20,  '2': 30,  '3': 40  },
-            '-3': { '-3': 0,  '-2': 0,  '-1': 0,  '0': 0,  '1': 10,  '2': 20,  '3': 30  }
+        // 1. 基础配置及决策控制矩阵
+        const CONFIG = {
+            tickers: {
+                tnx: '^TNX',   // 10年期美债
+                vxn: '^VXN',   // 纳指恐慌
+                soxx: 'SOXX'   // 半导体行业旗舰ETF
+            },
+            // 7x7 连续决策边界矩阵（对应坐标割算）
+            matrix: [
+                [30, 35, 40, 45, 50, 55, 60],
+                [35, 40, 45, 50, 55, 60, 65],
+                [40, 45, 50, 55, 60, 65, 70],
+                [45, 50, 55, 67, 70, 72, 75], // 核心锚点居中 67%
+                [50, 55, 60, 70, 75, 78, 80],
+                [55, 60, 65, 72, 78, 82, 85],
+                [60, 65, 70, 75, 80, 88, 95]
+            ]
         };
 
-        function initMatrixGrid() {
-            const container = document.getElementById('matrix-container');
-            container.innerHTML = '';
-            for (let y = 3; y >= -3; y--) {
-                for (let x = -3; x <= 3; x++) {
-                    const block = document.createElement('div');
-                    if (x >= 0 && y >= 0) block.className = "bg-emerald-950/20"; 
-                    else if (x < 0 && y < 0) block.className = "bg-rose-950/20"; 
-                    else block.className = "bg-slate-900/60"; 
-                    container.appendChild(block);
-                }
-            }
-        }
-
-        function interpolatePosition(x, y) {
-            x = Math.max(-3, Math.min(3, x));
-            y = Math.max(-3, Math.min(3, y));
-            const x1 = Math.floor(x);
-            const x2 = Math.min(3, x1 + 1);
-            const y1 = Math.floor(y);
-            const y2 = Math.min(3, y1 + 1);
-
-            const q11 = POSITION_MATRIX[String(y1)][String(x1)] || 0;
-            const q21 = POSITION_MATRIX[String(y1)][String(x2)] || 0;
-            const q12 = POSITION_MATRIX[String(y2)][String(x1)] || 0;
-            const q22 = POSITION_MATRIX[String(y2)][String(x2)] || 0;
-
-            const fx = x - x1;
-            const fy = y - y1;
-            return Math.round((q11 * (1 - fx) + q21 * fx) * (1 - fy) + (q12 * (1 - fx) + q22 * fx) * fy);
-        }
-
-        function renderMatrixDot(id, x, y) {
-            const dot = document.getElementById(id);
-            if (!dot) return;
-            dot.style.left = `${((x + 3.5) / 7) * 100}%`; 
-            dot.style.top = `${((3.5 - y) / 7) * 100}%`; 
-            dot.classList.remove('hidden');
-        }
-
-        // 🟢 核心算法回归：fedScore 为死数，VXN Bug 已修复
-        function calculateXYForIndex(results, idx) {
-            const ndxCloses = results[0].indicators.adjclose[0].adjclose;
-            const soxCloses = results[1].indicators.adjclose[0].adjclose;
-            const vxnCloses = results[2].indicators.adjclose[0].adjclose;
-            const tnxCloses = results[3].indicators.adjclose[0].adjclose;
-
-            const currentNDX = ndxCloses[idx];
-            const currentSOX = soxCloses[idx];
-            const currentVXN = vxnCloses[idx];
-            const currentTNX = tnxCloses[idx];
-
-            const oldIdx = Math.max(0, idx - 60); 
-            const ratioChange = ((currentSOX / currentNDX) - (soxCloses[oldIdx] / ndxCloses[oldIdx])) / (soxCloses[oldIdx] / ndxCloses[oldIdx]);
-            const bondDiff = currentTNX - tnxCloses[oldIdx];
-
-            let bondScore = Math.max(-1, Math.min(1, -bondDiff / 0.30)); 
-            let vxnAbsScore = Math.max(-1, Math.min(1, (20 - currentVXN) / 10)); // 修正版逆向映射
-            let soxRatioScore = Math.max(-1, Math.min(1, ratioChange / 0.05)); 
-
-            return {
-                X: Math.max(-3, Math.min(3, CONFIG_2026.fedScore + bondScore + vxnAbsScore)),
-                Y: Math.max(-3, Math.min(3, soxRatioScore + CONFIG_2026.capexScore + CONFIG_2026.epsScore)),
-                currentVXN, currentNDX, ndxCloses
-            };
-        }
-
-        function calculateFinalDecision(cur, w, m, q, vxnDayReturn = 0, ndxBias = 0, modeName = "模拟内化推演") {
-            let finalPosition = 0;
-            let regimeText = "";
-            const banner = document.getElementById('emergency-banner');
-
-            if ((vxnDayReturn > 0.20 && ndxBias < -0.08) || ndxBias < -0.15) {
-                finalPosition = 40;
-                regimeText = "🚨 黄金坑极端超卖突击";
-                banner.className = "w-full py-2.5 px-4 text-center text-xs font-bold bg-emerald-500 text-slate-950 block";
-                banner.innerText = "🚨 应急多头防御激活：非理性砸盘，系统执行机械式强制买入！";
-            } else {
-                banner.className = "hidden";
-                finalPosition = interpolatePosition(cur.X, cur.Y);
-
-                if (cur.X >= 0 && cur.Y >= 0) regimeText = "🟢 右上：戴维斯双击区 (流动性宽松+AI强力)";
-                else if (cur.X < 0 && cur.Y >= 0) regimeText = "🟡 左上：重力蹦迪区 (联储紧缩/逆风+AI强劲)";
-                else if (cur.X >= 0 && cur.Y < 0) regimeText = "🟡 右下：虚胖流动性区 (放水但缺乏半导体催化)";
-                else regimeText = "🔴 左下：戴维斯双杀区 (高压抽水+产业失速)";
-            }
-
-            document.getElementById('matrix-coords').innerText = `(当前 X: ${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}, Y: ${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)})`;
-            renderMatrixDot('quantum-dot', cur.X, cur.Y);
-            renderMatrixDot('quantum-dot-solid', cur.X, cur.Y);
-            renderMatrixDot('dot-week', w.X, w.Y);
-            renderMatrixDot('dot-month', m.X, m.Y);
-            renderMatrixDot('dot-quarter', q.X, q.Y);
-
-            const posEl = document.getElementById('target-position');
-            posEl.innerText = `${finalPosition}%`;
-            if (finalPosition >= 70) posEl.className = "text-6xl font-black text-emerald-400 my-2 tracking-tighter";
-            else if (finalPosition >= 40) posEl.className = "text-6xl font-black text-amber-400 my-2 tracking-tighter";
-            else posEl.className = "text-6xl font-black text-rose-500 my-2 tracking-tighter";
-            document.getElementById('market-regime').innerText = regimeText;
-
-            const actionPanel = document.getElementById('action-panel');
-            const actionCmd = document.getElementById('action-command');
+        // 2. 核心抗缓存+多代理旋转抓取引擎（工业级防卡死机制）
+        async function fetchRealtimeYahooData(symbol) {
+            const timestamp = Date.now();
+            // 拼接双重抗缓存标识符，强行击穿雅虎与CDN节点的本地强缓存
+            const targetYahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1m&_=${timestamp}`;
             
-            if (regimeText.includes("🚨")) {
-                actionPanel.className = "p-3 rounded-xl border bg-rose-950/40 border-rose-500/50 animate-pulse";
-                actionCmd.innerHTML = `<span class="text-rose-400 font-bold">【🚀 第二级火箭·核心突击】</span><br>当前触发黄金坑极端防御阈值！建议立即动用待发弹药中的 <b class="text-white text-base font-mono">20,000</b> 元单枪直入左侧强攻！`;
-            } else if (cur.X < -0.8 || cur.Y < 0.3) {
-                actionPanel.className = "p-3 rounded-xl border bg-amber-950/30 border-amber-500/40";
-                actionCmd.innerHTML = `<span class="text-amber-400 font-bold">【🏹 第一级火箭·前锋低吸】</span><br>建议动用待发弹药中的 <b class="text-white text-base font-mono">15,000</b> 元分批防御性低吸，借助25%老利润硬踩线。`;
-            } else if (cur.X > 0.5 && cur.Y > 1.2) {
-                actionPanel.className = "p-3 rounded-xl border bg-emerald-950/20 border-emerald-500/30";
-                actionCmd.innerHTML = `<span class="text-emerald-400 font-bold">【🛡️ 战术静默·拒绝抬轿】</span><br>建议50,000元现金持币观望，拒绝高位加仓，全力保护原仓位25%利润线。`;
-            } else {
-                actionPanel.className = "p-3 rounded-xl border bg-slate-950/50 border-slate-800";
-                actionCmd.innerHTML = `<span class="text-slate-300 font-bold">【💤 蓄势守候·持币观望】</span><br>大盘处于常规中性震荡区间，5万子弹继续锁定，静待雷达信号。`;
-            }
+            // 公共免费分布式跨境代理网络资源池（自动备用切换）
+            const proxyPool = [
+                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&_=${timestamp}`,
+                (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`
+            ];
 
-            document.getElementById('score-macro').innerText = `${cur.X > 0 ? '+' : ''}${cur.X.toFixed(2)}`;
-            document.getElementById('score-industry').innerText = `${cur.Y > 0 ? '+' : ''}${cur.Y.toFixed(2)}`;
-            document.getElementById('sync-mode').innerText = modeName;
-            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
-        }
+            let errorTracker = null;
 
-        async function fetchMarketData() {
-            document.getElementById('loading-bar').style.width = '30%';
-            // 🟢 依然保持请求 13周超短国债 ^IRX，但它绝不参与 X/Y 轴计算，仅作为下方的独立警报器触发源
-            const tickers = ['%5ENDX', '%5ESOX', '%5EVXN', '%5ETNX', '%5EIRX'];
-            const proxy = (t) => `https://corsproxy.io/?${encodeURIComponent(`https://query1.financeapp.yahoo.com/v8/finance/chart/${t}?interval=1d&range=6mo`)}`;
-
-            try {
-                const promises = tickers.map(t => fetch(proxy(t)).then(r => r.json()).then(data => data.chart.result[0]));
-                const results = await Promise.all(promises);
-                document.getElementById('loading-bar').style.width = '100%';
-
-                const len = results[0].indicators.adjclose[0].adjclose.length;
-                const idxCur = len - 1;
-                
-                // 解算核心 X、Y 轴（ fedScore 100% 静态硬编码）
-                const curPoints = calculateXYForIndex(results, idxCur);
-                const weekPoints = calculateXYForIndex(results, Math.max(0, len - 6));
-                const monthPoints = calculateXYForIndex(results, Math.max(0, len - 22));
-                const quarterPoints = calculateXYForIndex(results, Math.max(0, len - 64));
-
-                const prevVXN = results[2].indicators.adjclose[0].adjclose[idxCur - 1] || curPoints.currentVXN;
-                const ndxClosesArr = results[0].indicators.adjclose[0].adjclose;
-                const ndxMA20 = ndxClosesArr.slice(Math.max(0, idxCur - 19), idxCur + 1).reduce((a, b) => a + b, 0) / Math.min(20, idxCur + 1);
-
-                const vxnDayReturn = (curPoints.currentVXN - prevVXN) / prevVXN;
-                const ndxBias = (curPoints.currentNDX - ndxMA20) / ndxMA20;
-
-                calculateFinalDecision(curPoints, weekPoints, monthPoints, quarterPoints, vxnDayReturn, ndxBias, "华尔街实时同步");
-
-                // 🟢 【新增独立监听】：如果 13周短端美债利率 60天拉升超 25个基点，说明华尔街在疯狂计价超预期加息言论
-                const irxCloses = results[4].indicators.adjclose[0].adjclose;
-                const irxDiff = irxCloses[idxCur] - irxCloses[Math.max(0, idxCur - 60)];
-                const warningBox = document.getElementById('fed-warning-box');
-                if (irxDiff > 0.25) {
-                    warningBox.classList.remove('hidden'); // 自动亮起底部风险提示
-                } else {
-                    warningBox.classList.add('hidden');
-                }
-
-                setTimeout(() => document.getElementById('loading-bar').style.width = '0', 500);
-            } catch (e) {
-                console.warn("读取数据异常，执行基础推演", e);
-                document.getElementById('loading-bar').style.width = '0';
-                calculateFinalDecision({X: 0.25, Y: 1.65}, {X: 0.15, Y: 1.80}, {X: -0.30, Y: 1.20}, {X: -0.50, Y: 0.85}, 0, 0, "基础自我推演");
-            }
-        }
-
-        initMatrixGrid();
-        fetchMarketData();
-        setInterval(fetchMarketData, 5 * 60 * 1000);
-    </script>
-</body>
-</html>
+            // 循环穿透代理池
+            for (let i = 0; i < proxyPool.length; i++) {
+                try {
+                    const activeProxyUrl = proxyPool[i](targetYahooUrl);
+                    // 显式告诉浏览器：禁止使用一切本地死缓存文件
+                    const response = await fetch(activeProxyUrl, { cache: "no-store" });
+                    
+                    if (!response.ok) throw new Error(`HTTP状态异常: ${response.status}`);
+                    
+                    const containerData = await response.json();
+                    
+                    // 解构清洗不同代理服务器返回的包装结构
